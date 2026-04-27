@@ -57,12 +57,18 @@ input:focus { border-color: var(--accent); }
 
 /* APP */
 #app { display: none; flex-direction: column; min-height: 100vh; }
-.app-header { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
-.app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; flex: 1; color: var(--text); }
+.app-header { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; flex: 1; color: var(--text); min-width: 120px; }
 .app-version { font-size: 0.58rem; color: var(--text3); align-self: flex-end; padding-bottom: 0.1rem; }
-.icon-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); cursor: pointer; font-size: 0.8rem; transition: all 0.12s; font-family: var(--mono); line-height: 1.4; }
+.icon-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); cursor: pointer; font-size: 0.75rem; transition: all 0.12s; font-family: var(--mono); line-height: 1.4; white-space: nowrap; }
 .icon-btn:hover { color: var(--text); border-color: var(--text2); }
 .icon-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Project filter select in header */
+#project-filter { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); font-family: var(--mono); font-size: 0.75rem; cursor: pointer; outline: none; transition: all 0.12s; appearance: none; -webkit-appearance: none; max-width: 140px; }
+#project-filter:hover { border-color: var(--text2); color: var(--text); }
+#project-filter:focus { border-color: var(--accent); color: var(--text); }
+#project-filter.active { background: var(--surface2); border-color: var(--projects); color: var(--projects); }
 
 /* NAV */
 .nav-tabs { display: flex; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
@@ -125,6 +131,15 @@ select:focus { border-color: var(--accent); }
 .btn-secondary:hover { color: var(--text); border-color: var(--text2); }
 .btn-danger { color: var(--waiting); border-color: var(--waiting); background: transparent; }
 
+/* Autocomplete wrapper */
+.autocomplete-wrap { position: relative; margin-top: 0.3rem; }
+.autocomplete-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; color: var(--text); font-family: var(--mono); font-size: 0.8rem; outline: none; transition: border-color 0.15s; margin-top: 0; }
+.autocomplete-wrap input:focus { border-color: var(--accent); }
+.autocomplete-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); z-index: 400; max-height: 160px; overflow-y: auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.autocomplete-dropdown.open { display: block; }
+.autocomplete-item { padding: 0.45rem 0.8rem; font-size: 0.78rem; cursor: pointer; color: var(--text); font-family: var(--mono); }
+.autocomplete-item:hover, .autocomplete-item.highlighted { background: var(--surface2); color: var(--accent); }
+
 /* SETTINGS */
 .settings-container { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 480px; margin: 0 auto; padding-bottom: 5rem; }
 .settings-container h2 { font-family: var(--serif); font-weight: 300; font-size: 1.2rem; font-style: italic; }
@@ -148,7 +163,6 @@ select:focus { border-color: var(--accent); }
 <div id="setup-screen">
   <div class="setup-logo">get<span>things</span>done</div>
   <div class="setup-sub">GTD · Google Sheets Edition</div>
-
   <div class="setup-card">
     <h2>Connect your Google account to get started</h2>
     <div class="form-group">
@@ -176,7 +190,8 @@ select:focus { border-color: var(--accent); }
 <div id="app">
   <header class="app-header">
     <div class="app-title">get<em>things</em>done</div>
-    <span class="app-version">v4</span>
+    <span class="app-version">v5</span>
+    <select id="project-filter" onchange="onProjectFilterChange()" title="Filter by project"></select>
     <button class="icon-btn active" id="btn-hide-done" onclick="toggleHideDone()" title="Toggle completed tasks">✓ hide done</button>
     <button class="icon-btn" onclick="refreshTasks()" title="Refresh">↻</button>
     <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
@@ -219,7 +234,11 @@ select:focus { border-color: var(--accent); }
     </div>
     <div class="form-group">
       <label class="field-label">Project</label>
-      <input type="text" id="f-project" placeholder="Project name (optional)" />
+      <div class="autocomplete-wrap">
+        <input type="text" id="f-project" placeholder="Project name (optional)" autocomplete="off"
+          oninput="acInput()" onkeydown="acKeydown(event)" onfocus="acInput()" onblur="acBlur()" />
+        <div class="autocomplete-dropdown" id="ac-dropdown"></div>
+      </div>
     </div>
     <div class="form-group">
       <label class="field-label">Google Doc URL <span style="color:var(--text3)">(optional)</span></label>
@@ -239,28 +258,31 @@ select:focus { border-color: var(--accent); }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const VERSION    = 4;
+const VERSION    = 5;
 const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
 const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
 const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','Reference'];
 const LIST_COLORS = { 'Inbox':'#1a8f6a','Next Actions':'#5b4ee8','Projects':'#b07000','Waiting For':'#c03030','Someday/Maybe':'#2060b0','Reference':'#7030a0' };
-// Sheet columns (0-indexed): A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed
+// Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
 let tasks = [], activeList = 'Inbox', editingRowIndex = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
 let hideDone = true;
+let activeProject = '';   // '' = all projects
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 window.onload = () => {
   const k = localStorage.getItem('gtd_api_key');
   const c = localStorage.getItem('gtd_client_id');
   const h = localStorage.getItem('gtd_hide_done');
+  const p = localStorage.getItem('gtd_active_project');
   if (k) document.getElementById('api-key-input').value = k;
   if (c) document.getElementById('client-id-input').value = c;
   if (h !== null) hideDone = h === 'true';
+  if (p !== null) activeProject = p;
   updateHideDoneBtn();
   if (k) connect();
 };
@@ -276,12 +298,36 @@ async function connect() {
     await loadTasks();
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    buildNav(); renderTasks();
+    buildNav(); buildProjectFilter(); renderTasks();
   } catch(e) {
     console.error(e);
     toast('Connection failed — check API key & sheet sharing');
   }
   setLoading(false);
+}
+
+// ── PROJECT FILTER ────────────────────────────────────────────────────────────
+function getProjects() {
+  const seen = new Set();
+  tasks.forEach(t => { if (t.project) seen.add(t.project); });
+  return [...seen].sort((a, b) => a.localeCompare(b));
+}
+
+function buildProjectFilter() {
+  const sel = document.getElementById('project-filter');
+  if (!sel) return;
+  const projects = getProjects();
+  sel.innerHTML = `<option value="">All projects</option>` +
+    projects.map(p => `<option value="${esc(p)}"${activeProject===p?' selected':''}>${esc(p)}</option>`).join('');
+  sel.classList.toggle('active', !!activeProject);
+}
+
+function onProjectFilterChange() {
+  const sel = document.getElementById('project-filter');
+  activeProject = sel.value;
+  localStorage.setItem('gtd_active_project', activeProject);
+  sel.classList.toggle('active', !!activeProject);
+  renderTasks();
 }
 
 // ── HIDE DONE TOGGLE ──────────────────────────────────────────────────────────
@@ -380,11 +426,17 @@ function renderTasks() {
   const c = document.getElementById('task-list');
   if (!c) return;
   let filtered = tasks.filter(t => t.list === activeList);
+  if (activeProject) filtered = filtered.filter(t => t.project === activeProject);
   if (hideDone) filtered = filtered.filter(t => t.status !== 'done');
+
   if (!filtered.length) {
-    const msg = hideDone && tasks.filter(t => t.list===activeList && t.status==='done').length
-      ? 'All tasks done — toggle "hide done" to see them'
-      : `Nothing in ${activeList}`;
+    const allInList = tasks.filter(t => t.list === activeList);
+    let msg = `Nothing in ${activeList}`;
+    if (activeProject && !allInList.some(t => t.project === activeProject)) {
+      msg = `No tasks for project "${activeProject}" in ${activeList}`;
+    } else if (hideDone && allInList.filter(t => !activeProject || t.project===activeProject).every(t => t.status==='done')) {
+      msg = 'All tasks done — toggle "hide done" to see them';
+    }
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">${listIcon(activeList)}</div><p>${msg}</p><p style="opacity:0.5;font-size:0.68rem;margin-top:0.25rem">Tap + to add something</p></div>`;
     return;
   }
@@ -434,14 +486,78 @@ async function toggleDone(e, ri) {
   const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:I${ri}`,
     [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate]);
   if (ok) {
-    t.status = ns;
-    t.completed = completedDate;
+    t.status = ns; t.completed = completedDate;
     buildNav(); renderTasks();
     toast(ns==='done' ? 'Done ✓' : 'Reopened');
   } else {
     toast('Update failed — authorise write access in Settings');
   }
   setLoading(false);
+}
+
+// ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
+let acHighlight = -1;
+let acBlurTimer = null;
+
+function acGetMatches(val) {
+  const projects = getProjects();
+  if (!val) return projects;
+  const lower = val.toLowerCase();
+  return projects.filter(p => p.toLowerCase().includes(lower));
+}
+
+function acRender(matches) {
+  const dd = document.getElementById('ac-dropdown');
+  if (!matches.length) { dd.classList.remove('open'); return; }
+  dd.innerHTML = matches.map((p, i) =>
+    `<div class="autocomplete-item" data-val="${esc(p)}" onmousedown="acSelect('${esc(p)}')">${esc(p)}</div>`
+  ).join('');
+  acHighlight = -1;
+  dd.classList.add('open');
+}
+
+function acInput() {
+  const val = document.getElementById('f-project').value;
+  acRender(acGetMatches(val));
+}
+
+function acSelect(val) {
+  document.getElementById('f-project').value = val;
+  document.getElementById('ac-dropdown').classList.remove('open');
+  acHighlight = -1;
+}
+
+function acBlur() {
+  // small delay so mousedown on item fires first
+  acBlurTimer = setTimeout(() => {
+    document.getElementById('ac-dropdown').classList.remove('open');
+    acHighlight = -1;
+  }, 150);
+}
+
+function acKeydown(e) {
+  const dd = document.getElementById('ac-dropdown');
+  const items = dd.querySelectorAll('.autocomplete-item');
+  if (!dd.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    acHighlight = Math.min(acHighlight + 1, items.length - 1);
+    acUpdateHighlight(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    acHighlight = Math.max(acHighlight - 1, 0);
+    acUpdateHighlight(items);
+  } else if (e.key === 'Enter' && acHighlight >= 0) {
+    e.preventDefault();
+    acSelect(items[acHighlight].dataset.val);
+  } else if (e.key === 'Escape') {
+    dd.classList.remove('open');
+  }
+}
+
+function acUpdateHighlight(items) {
+  items.forEach((el, i) => el.classList.toggle('highlighted', i === acHighlight));
+  if (acHighlight >= 0) items[acHighlight].scrollIntoView({ block: 'nearest' });
 }
 
 // ── ADD / EDIT MODAL ──────────────────────────────────────────────────────────
@@ -451,12 +567,13 @@ function openAddModal() {
   document.getElementById('f-task').value = '';
   document.getElementById('f-list').value = activeList;
   document.getElementById('f-due').value = '';
-  document.getElementById('f-project').value = '';
+  document.getElementById('f-project').value = activeProject || '';
   document.getElementById('f-doc').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('ac-dropdown').classList.remove('open');
   document.getElementById('task-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('f-task').focus(),300);
+  setTimeout(()=>document.getElementById('f-task').focus(), 300);
 }
 
 function openEditModal(ri) {
@@ -470,6 +587,7 @@ function openEditModal(ri) {
   document.getElementById('f-doc').value     = t.doc;
   document.getElementById('f-notes').value   = t.notes;
   document.getElementById('btn-delete').style.display = 'block';
+  document.getElementById('ac-dropdown').classList.remove('open');
   document.getElementById('task-modal').classList.add('open');
 }
 
@@ -496,7 +614,9 @@ async function saveTask() {
     if (ok) { await loadTasks(); toast('Task added ✓'); }
     else toast('Add failed — check OAuth');
   }
-  closeModal(); buildNav(); renderTasks(); setLoading(false);
+  closeModal();
+  buildNav(); buildProjectFilter(); renderTasks();
+  setLoading(false);
 }
 
 async function deleteTask() {
@@ -505,15 +625,18 @@ async function deleteTask() {
   setLoading(true);
   const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:I${editingRowIndex}`,
     [t.task, t.list, t.project, t.due, t.doc, t.notes, 'deleted', t.id, t.completed]);
-  if (ok) { tasks=tasks.filter(x=>x.rowIndex!==editingRowIndex); toast('Deleted'); closeModal(); buildNav(); renderTasks(); }
-  else toast('Delete failed');
+  if (ok) {
+    tasks = tasks.filter(x=>x.rowIndex!==editingRowIndex);
+    toast('Deleted'); closeModal();
+    buildNav(); buildProjectFilter(); renderTasks();
+  } else toast('Delete failed');
   setLoading(false);
 }
 
 // ── REFRESH ───────────────────────────────────────────────────────────────────
 async function refreshTasks() {
   setLoading(true);
-  try { await loadTasks(); buildNav(); renderTasks(); toast('Refreshed'); }
+  try { await loadTasks(); buildNav(); buildProjectFilter(); renderTasks(); toast('Refreshed'); }
   catch(e) { toast('Refresh failed'); }
   setLoading(false);
 }
@@ -570,7 +693,10 @@ function saveCreds() {
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────────────────
-function closeModal() { document.getElementById('task-modal').classList.remove('open'); }
+function closeModal() {
+  document.getElementById('task-modal').classList.remove('open');
+  document.getElementById('ac-dropdown').classList.remove('open');
+}
 function closeModalOnOverlay(e) { if(e.target===document.getElementById('task-modal')) closeModal(); }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
