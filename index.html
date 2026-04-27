@@ -242,7 +242,7 @@ const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
 const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','Reference'];
 const LIST_COLORS = { 'Inbox':'#6af7c2','Next Actions':'#a78bfa','Projects':'#f7c26a','Waiting For':'#f87171','Someday/Maybe':'#60a5fa','Reference':'#c084fc' };
-// Sheet columns (0-indexed): A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID
+// Sheet columns (0-indexed): A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
@@ -292,8 +292,9 @@ async function loadTasks() {
     due:     row[3] || '',
     doc:     row[4] || '',
     notes:   row[5] || '',
-    status:  row[6] || 'active',
-    id:      row[7] || uid(),
+    status:    row[6] || 'active',
+    id:        row[7] || uid(),
+    completed: row[8] || '',
   })).filter(t => t.task && t.status !== 'deleted');
 }
 
