@@ -61,7 +61,6 @@ input:focus { border-color: var(--accent); }
 .app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; color: var(--text); min-width: 110px; }
 .app-version { font-size: 0.58rem; color: var(--text3); padding-bottom: 0.1rem; align-self: flex-end; }
 
-/* Search box */
 .search-wrap { position: relative; flex: 1; min-width: 100px; max-width: 220px; }
 .search-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 1.6rem 0.3rem 0.6rem; color: var(--text); font-family: var(--mono); font-size: 0.75rem; outline: none; transition: border-color 0.15s; }
 .search-wrap input:focus { border-color: var(--accent); }
@@ -199,7 +198,7 @@ select:focus { border-color: var(--accent); }
 <div id="app">
   <header class="app-header">
     <div class="app-title">get<em>things</em>done</div>
-    <span class="app-version">v6</span>
+    <span class="app-version">v7</span>
     <div class="search-wrap">
       <input type="text" id="search-input" placeholder="search…" oninput="onSearchInput()" autocomplete="off" />
       <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
@@ -272,7 +271,7 @@ select:focus { border-color: var(--accent); }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const VERSION    = 6;
+const VERSION    = 7;
 const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
 const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
@@ -280,13 +279,16 @@ const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','
 const LIST_COLORS = { 'Inbox':'#1a8f6a','Next Actions':'#5b4ee8','Projects':'#b07000','Waiting For':'#c03030','Someday/Maybe':'#2060b0','Reference':'#7030a0' };
 // Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed J=Modified
 
+// Special sentinel value for "no project" filter
+const NO_PROJECT = '__none__';
+
 // ── STATE ────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
 let tasks = [], activeList = 'Inbox', editingRowIndex = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
 let hideDone = true;
-let activeProject = '';
-let sortByModified = false;   // false = row order, true = recently modified first
+let activeProject = '';   // '' = all, NO_PROJECT = unassigned, else project name
+let sortByModified = false;
 let searchQuery = '';
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
@@ -328,41 +330,31 @@ async function connect() {
 // ── SEARCH ────────────────────────────────────────────────────────────────────
 function onSearchInput() {
   searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
-  const clearBtn = document.getElementById('search-clear');
-  clearBtn.classList.toggle('show', searchQuery.length > 0);
+  document.getElementById('search-clear').classList.toggle('show', searchQuery.length > 0);
   renderTasks();
 }
-
 function clearSearch() {
   document.getElementById('search-input').value = '';
   searchQuery = '';
   document.getElementById('search-clear').classList.remove('show');
   renderTasks();
 }
-
 function matchesSearch(t, q) {
   if (!q) return true;
-  return t.task.toLowerCase().includes(q)
-    || t.project.toLowerCase().includes(q)
-    || t.notes.toLowerCase().includes(q);
+  return t.task.toLowerCase().includes(q) || t.project.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q);
 }
-
-// Highlight search term in text
 function highlight(text, q) {
   if (!q) return esc(text);
-  const escaped = esc(text);
   const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return escaped.replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
+  return esc(text).replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
 }
 
 // ── SORT ──────────────────────────────────────────────────────────────────────
 function toggleSort() {
   sortByModified = !sortByModified;
   localStorage.setItem('gtd_sort_modified', sortByModified);
-  updateSortBtn();
-  renderTasks();
+  updateSortBtn(); renderTasks();
 }
-
 function updateSortBtn() {
   const btn = document.getElementById('btn-sort');
   if (!btn) return;
@@ -374,8 +366,7 @@ function updateSortBtn() {
 function toggleHideDone() {
   hideDone = !hideDone;
   localStorage.setItem('gtd_hide_done', hideDone);
-  updateHideDoneBtn();
-  renderTasks();
+  updateHideDoneBtn(); renderTasks();
 }
 function updateHideDoneBtn() {
   const btn = document.getElementById('btn-hide-done');
@@ -395,7 +386,10 @@ function buildProjectFilter() {
   const sel = document.getElementById('project-filter');
   if (!sel) return;
   const projects = getProjects();
-  sel.innerHTML = `<option value="">All projects</option>` +
+  const hasUnassigned = tasks.some(t => !t.project);
+  sel.innerHTML =
+    `<option value="">All projects</option>` +
+    (hasUnassigned ? `<option value="${NO_PROJECT}"${activeProject===NO_PROJECT?' selected':''}>No project</option>` : '') +
     projects.map(p => `<option value="${esc(p)}"${activeProject===p?' selected':''}>${esc(p)}</option>`).join('');
   sel.classList.toggle('active', !!activeProject);
 }
@@ -483,7 +477,6 @@ function buildNav() {
       <span class="badge">${countActive(l)}</span>
     </button>`).join('');
 }
-
 function switchList(l) { activeList = l; buildNav(); renderTasks(); }
 function countActive(l) { return tasks.filter(t => t.list===l && t.status!=='done').length; }
 
@@ -493,7 +486,11 @@ function renderTasks() {
   if (!c) return;
 
   let filtered = tasks.filter(t => t.list === activeList);
-  if (activeProject) filtered = filtered.filter(t => t.project === activeProject);
+  if (activeProject === NO_PROJECT) {
+    filtered = filtered.filter(t => !t.project);
+  } else if (activeProject) {
+    filtered = filtered.filter(t => t.project === activeProject);
+  }
   if (hideDone) filtered = filtered.filter(t => t.status !== 'done');
   if (searchQuery) filtered = filtered.filter(t => matchesSearch(t, searchQuery));
 
@@ -509,8 +506,9 @@ function renderTasks() {
   if (!filtered.length) {
     let msg = `Nothing in ${activeList}`;
     if (searchQuery) msg = `No results for "${searchQuery}"`;
-    else if (activeProject && !tasks.some(t => t.list===activeList && t.project===activeProject)) msg = `No tasks for "${activeProject}" in ${activeList}`;
-    else if (hideDone && tasks.filter(t => t.list===activeList && (!activeProject || t.project===activeProject)).every(t => t.status==='done')) msg = 'All tasks done — toggle "hide done" to see them';
+    else if (activeProject === NO_PROJECT) msg = `No unassigned tasks in ${activeList}`;
+    else if (activeProject) msg = `No tasks for "${activeProject}" in ${activeList}`;
+    else if (hideDone && tasks.filter(t => t.list===activeList).every(t => t.status==='done')) msg = 'All tasks done — toggle "hide done" to see them';
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">${listIcon(activeList)}</div><p>${msg}</p><p style="opacity:0.5;font-size:0.68rem;margin-top:0.25rem">Tap + to add something</p></div>`;
     return;
   }
@@ -581,7 +579,6 @@ function acGetMatches(val) {
   const lower = val.toLowerCase();
   return projects.filter(p => p.toLowerCase().includes(lower));
 }
-
 function acRender(matches) {
   const dd = document.getElementById('ac-dropdown');
   if (!matches.length) { dd.classList.remove('open'); return; }
@@ -591,20 +588,14 @@ function acRender(matches) {
   acHighlight = -1;
   dd.classList.add('open');
 }
-
-function acInput() {
-  acRender(acGetMatches(document.getElementById('f-project').value));
-}
+function acInput() { acRender(acGetMatches(document.getElementById('f-project').value)); }
 function acSelect(val) {
   document.getElementById('f-project').value = val;
   document.getElementById('ac-dropdown').classList.remove('open');
   acHighlight = -1;
 }
 function acBlur() {
-  setTimeout(() => {
-    document.getElementById('ac-dropdown').classList.remove('open');
-    acHighlight = -1;
-  }, 150);
+  setTimeout(() => { document.getElementById('ac-dropdown').classList.remove('open'); acHighlight = -1; }, 150);
 }
 function acKeydown(e) {
   const dd = document.getElementById('ac-dropdown');
@@ -627,7 +618,8 @@ function openAddModal() {
   document.getElementById('f-task').value = '';
   document.getElementById('f-list').value = activeList;
   document.getElementById('f-due').value = '';
-  document.getElementById('f-project').value = activeProject || '';
+  // Pre-fill project only if a named project is active (not "no project")
+  document.getElementById('f-project').value = (activeProject && activeProject !== NO_PROJECT) ? activeProject : '';
   document.getElementById('f-doc').value = '';
   document.getElementById('f-notes').value = '';
   document.getElementById('btn-delete').style.display = 'none';
@@ -768,8 +760,7 @@ function todayStr() {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function nowStr() {
-  const d = new Date();
-  return d.toISOString().slice(0, 16).replace('T', ' '); // "YYYY-MM-DD HH:MM"
+  return new Date().toISOString().slice(0,16).replace('T',' ');
 }
 let toastTimer;
 function toast(msg) {
