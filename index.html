@@ -21,7 +21,7 @@
   --text3:     #aaaaaa;
   --inbox:     #1a8f6a;
   --next:      #5b4ee8;
-  --projects:  #b07000;
+  --proj-col:  #b07000;
   --waiting:   #c03030;
   --someday:   #2060b0;
   --reference: #7030a0;
@@ -34,7 +34,6 @@
 body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; overflow-x: hidden; font-size: 13px; }
 
 #loading-bar { position: fixed; top: 0; left: 0; height: 2px; background: var(--accent); width: 0%; z-index: 9999; transition: width 0.3s ease; }
-
 #toast { position: fixed; bottom: 5rem; left: 50%; transform: translateX(-50%) translateY(8px); background: var(--text); border-radius: var(--radius-sm); padding: 0.4rem 1rem; font-size: 0.72rem; color: #fff; z-index: 8000; opacity: 0; transition: all 0.2s; pointer-events: none; white-space: nowrap; }
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
@@ -60,22 +59,19 @@ input:focus { border-color: var(--accent); }
 .app-header { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
 .app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; color: var(--text); min-width: 110px; }
 .app-version { font-size: 0.58rem; color: var(--text3); padding-bottom: 0.1rem; align-self: flex-end; }
-
 .search-wrap { position: relative; flex: 1; min-width: 100px; max-width: 220px; }
 .search-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 1.6rem 0.3rem 0.6rem; color: var(--text); font-family: var(--mono); font-size: 0.75rem; outline: none; transition: border-color 0.15s; }
 .search-wrap input:focus { border-color: var(--accent); }
 .search-wrap input::placeholder { color: var(--text3); }
 .search-clear { position: absolute; right: 0.4rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0; display: none; }
 .search-clear.show { display: block; }
-
 .icon-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); cursor: pointer; font-size: 0.75rem; transition: all 0.12s; font-family: var(--mono); line-height: 1.4; white-space: nowrap; }
 .icon-btn:hover { color: var(--text); border-color: var(--text2); }
 .icon-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
 #project-filter { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); font-family: var(--mono); font-size: 0.75rem; cursor: pointer; outline: none; transition: all 0.12s; appearance: none; -webkit-appearance: none; max-width: 130px; }
 #project-filter:hover { border-color: var(--text2); color: var(--text); }
 #project-filter:focus { border-color: var(--accent); color: var(--text); }
-#project-filter.active { border-color: var(--projects); color: var(--projects); }
+#project-filter.active { border-color: var(--proj-col); color: var(--proj-col); }
 
 /* NAV */
 .nav-tabs { display: flex; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
@@ -86,15 +82,13 @@ input:focus { border-color: var(--accent); }
 .badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 0.03rem 0.35rem; font-size: 0.58rem; color: var(--text2); min-width: 16px; text-align: center; }
 .nav-tab.active .badge { border-color: var(--accent); color: var(--accent); }
 
-/* TASKS */
+/* TASK LIST */
 .task-list-container { flex: 1; padding: 0.65rem; display: flex; flex-direction: column; gap: 0.3rem; padding-bottom: 5rem; max-width: 860px; width: 100%; margin: 0 auto; }
 .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; gap: 0.5rem; color: var(--text2); }
 .empty-icon { font-size: 1.8rem; opacity: 0.25; }
 .empty-state p { font-size: 0.72rem; letter-spacing: 0.04em; text-align: center; }
-
 .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.5rem 0.75rem; display: flex; gap: 0.65rem; align-items: flex-start; transition: border-color 0.12s; cursor: pointer; }
 .task-card:hover { border-color: var(--text3); }
-.task-card:active { opacity: 0.85; }
 .task-card.overdue { border-left: 3px solid var(--waiting); }
 .task-card.completed { opacity: 0.4; }
 .task-check { width: 16px; height: 16px; border: 1.5px solid var(--border); border-radius: 50%; flex-shrink: 0; margin-top: 2px; transition: all 0.15s; display: flex; align-items: center; justify-content: center; font-size: 0.55rem; }
@@ -106,18 +100,34 @@ input:focus { border-color: var(--accent); }
 .task-card.completed .task-title { text-decoration: line-through; color: var(--text2); }
 .task-meta { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
 .tag { font-size: 0.58rem; letter-spacing: 0.04em; padding: 0.08rem 0.38rem; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); white-space: nowrap; }
-.tag.project { color: var(--projects); border-color: currentColor; background: transparent; }
-.tag.due-soon { color: var(--projects); border-color: currentColor; background: transparent; }
+.tag.project { color: var(--proj-col); border-color: currentColor; background: transparent; }
+.tag.due-soon { color: var(--proj-col); border-color: currentColor; background: transparent; }
 .tag.due-overdue { color: var(--waiting); border-color: currentColor; background: transparent; }
 .tag.doc { color: var(--someday); border-color: currentColor; background: transparent; cursor: pointer; }
 .tag.doc:hover { background: #eef4ff; }
 .tag.completed-on { color: var(--text3); border-color: var(--border); font-style: italic; }
 
+/* PROJECTS VIEW */
+.projects-container { flex: 1; padding: 0.65rem; padding-bottom: 5rem; max-width: 860px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 0; }
+.proj-group-label { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text3); padding: 0.75rem 0.25rem 0.35rem; }
+.proj-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.55rem 0.85rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; margin-bottom: 0.3rem; transition: border-color 0.12s; }
+.proj-card:hover { border-color: var(--text3); }
+.proj-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.proj-status-dot.active  { background: var(--inbox); }
+.proj-status-dot.someday { background: var(--someday); }
+.proj-status-dot.done    { background: var(--text3); }
+.proj-name { font-size: 0.82rem; flex: 1; color: var(--text); }
+.proj-card.done-proj .proj-name { color: var(--text2); text-decoration: line-through; }
+.proj-task-count { font-size: 0.62rem; color: var(--text3); white-space: nowrap; }
+.proj-doc-link { font-size: 0.62rem; color: var(--someday); text-decoration: none; white-space: nowrap; }
+.proj-doc-link:hover { text-decoration: underline; }
+.proj-notes-snippet { font-size: 0.68rem; color: var(--text2); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .fab { position: fixed; bottom: 1.25rem; right: 1.25rem; width: 44px; height: 44px; background: var(--accent); border: none; border-radius: 50%; color: white; font-size: 1.3rem; cursor: pointer; z-index: 200; box-shadow: 0 2px 10px rgba(0,0,0,0.18); transition: opacity 0.15s; display: flex; align-items: center; justify-content: center; }
 .fab:hover { opacity: 0.9; }
 .fab:active { opacity: 0.75; }
 
-/* MODAL */
+/* MODALS */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 300; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.18s; }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius) var(--radius) 0 0; padding: 1.25rem; width: 100%; max-width: 560px; display: flex; flex-direction: column; gap: 0.85rem; transform: translateY(100%); transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1); max-height: 88vh; overflow-y: auto; }
@@ -145,8 +155,10 @@ select:focus { border-color: var(--accent); }
 .autocomplete-wrap input:focus { border-color: var(--accent); }
 .autocomplete-dropdown { position: absolute; top: calc(100% + 2px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); z-index: 400; max-height: 160px; overflow-y: auto; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .autocomplete-dropdown.open { display: block; }
-.autocomplete-item { padding: 0.45rem 0.8rem; font-size: 0.78rem; cursor: pointer; color: var(--text); font-family: var(--mono); }
+.autocomplete-item { padding: 0.45rem 0.8rem; font-size: 0.78rem; cursor: pointer; color: var(--text); font-family: var(--mono); display: flex; align-items: center; gap: 0.5rem; }
+.autocomplete-item.someday-item { color: var(--text2); }
 .autocomplete-item:hover, .autocomplete-item.highlighted { background: var(--surface2); color: var(--accent); }
+.autocomplete-item .ac-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
 
 /* SETTINGS */
 .settings-container { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-width: 480px; margin: 0 auto; padding-bottom: 5rem; }
@@ -163,11 +175,10 @@ select:focus { border-color: var(--accent); }
 </style>
 </head>
 <body>
-
 <div id="loading-bar"></div>
 <div id="toast"></div>
 
-<!-- SETUP SCREEN -->
+<!-- SETUP -->
 <div id="setup-screen">
   <div class="setup-logo">get<span>things</span>done</div>
   <div class="setup-sub">GTD · Google Sheets Edition</div>
@@ -198,31 +209,31 @@ select:focus { border-color: var(--accent); }
 <div id="app">
   <header class="app-header">
     <div class="app-title">get<em>things</em>done</div>
-    <span class="app-version">v7</span>
+    <span class="app-version">v8</span>
     <div class="search-wrap">
       <input type="text" id="search-input" placeholder="search…" oninput="onSearchInput()" autocomplete="off" />
-      <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear">×</button>
     </div>
     <select id="project-filter" onchange="onProjectFilterChange()" title="Filter by project"></select>
-    <button class="icon-btn active" id="btn-hide-done" onclick="toggleHideDone()" title="Toggle completed tasks">✓ hide done</button>
-    <button class="icon-btn" id="btn-sort" onclick="toggleSort()" title="Sort order">↕ modified</button>
-    <button class="icon-btn" onclick="refreshTasks()" title="Refresh">↻</button>
+    <button class="icon-btn active" id="btn-hide-done" onclick="toggleHideDone()">✓ hide done</button>
+    <button class="icon-btn" id="btn-sort" onclick="toggleSort()">↕ modified</button>
+    <button class="icon-btn" onclick="refreshAll()" title="Refresh">↻</button>
     <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
   </header>
   <nav class="nav-tabs" id="nav-tabs"></nav>
   <main id="main-content">
     <div class="task-list-container" id="task-list"></div>
   </main>
-  <button class="fab" id="fab" onclick="openAddModal()">+</button>
+  <button class="fab" id="fab" onclick="onFabClick()">+</button>
 </div>
 
-<!-- ADD/EDIT MODAL -->
-<div class="modal-overlay" id="task-modal" onclick="closeModalOnOverlay(event)">
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal" onclick="closeModalOnOverlay(event,'task-modal')">
   <div class="modal">
     <div class="modal-handle"></div>
     <div class="modal-header">
-      <h2 id="modal-title">New Task</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2 id="task-modal-title">New Task</h2>
+      <button class="modal-close" onclick="closeModal('task-modal')">✕</button>
     </div>
     <div class="form-group">
       <label class="field-label">Task</label>
@@ -232,12 +243,8 @@ select:focus { border-color: var(--accent); }
       <div class="form-group">
         <label class="field-label">List</label>
         <select id="f-list">
-          <option>Inbox</option>
-          <option>Next Actions</option>
-          <option>Projects</option>
-          <option>Waiting For</option>
-          <option>Someday/Maybe</option>
-          <option>Reference</option>
+          <option>Inbox</option><option>Next Actions</option><option>Projects</option>
+          <option>Waiting For</option><option>Someday/Maybe</option><option>Reference</option>
         </select>
       </div>
       <div class="form-group">
@@ -262,36 +269,72 @@ select:focus { border-color: var(--accent); }
       <textarea id="f-notes" placeholder="Additional notes..." rows="2"></textarea>
     </div>
     <div class="modal-actions">
-      <button class="btn-secondary btn-danger" id="btn-delete" onclick="deleteTask()" style="display:none">Delete</button>
-      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-secondary btn-danger" id="btn-delete-task" onclick="deleteTask()" style="display:none">Delete</button>
+      <button class="btn-secondary" onclick="closeModal('task-modal')">Cancel</button>
       <button class="btn-primary" onclick="saveTask()" style="flex:2">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROJECT MODAL -->
+<div class="modal-overlay" id="proj-modal" onclick="closeModalOnOverlay(event,'proj-modal')">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <h2 id="proj-modal-title">New Project</h2>
+      <button class="modal-close" onclick="closeModal('proj-modal')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Project Name</label>
+      <input type="text" id="pf-name" placeholder="Project name" style="margin-top:0.3rem" />
+    </div>
+    <div class="form-group">
+      <label class="field-label">Status</label>
+      <select id="pf-status">
+        <option value="active">Active</option>
+        <option value="someday">Someday/Maybe</option>
+        <option value="done">Done</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Notes</label>
+      <textarea id="pf-notes" placeholder="Notes (optional)" rows="2"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="field-label">Google Doc URL <span style="color:var(--text3)">(optional)</span></label>
+      <input type="text" id="pf-doc" placeholder="https://docs.google.com/..." style="margin-top:0.3rem" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary btn-danger" id="btn-delete-proj" onclick="deleteProject()" style="display:none">Delete</button>
+      <button class="btn-secondary" onclick="closeModal('proj-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveProject()" style="flex:2">Save</button>
     </div>
   </div>
 </div>
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const VERSION    = 7;
-const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
-const SHEET_NAME = 'Tasks';
+const VERSION      = 8;
+const SHEET_ID     = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
+const TASKS_SHEET  = 'Tasks';
+const PROJ_SHEET   = 'Projects';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
 const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','Reference'];
 const LIST_COLORS = { 'Inbox':'#1a8f6a','Next Actions':'#5b4ee8','Projects':'#b07000','Waiting For':'#c03030','Someday/Maybe':'#2060b0','Reference':'#7030a0' };
-// Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed J=Modified
-
-// Special sentinel value for "no project" filter
+// Tasks cols:   A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed J=Modified
+// Projects cols: A=Project B=Status C=Notes D=DocURL E=Modified
 const NO_PROJECT = '__none__';
+const PROJ_STATUS_ORDER = { active: 0, someday: 1, done: 2 };
 
-// ── STATE ────────────────────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
-let tasks = [], activeList = 'Inbox', editingRowIndex = null;
+let tasks = [], projects = [];
+let activeList = 'Inbox', editingTaskRow = null, editingProjRow = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
-let hideDone = true;
-let activeProject = '';   // '' = all, NO_PROJECT = unassigned, else project name
-let sortByModified = false;
-let searchQuery = '';
+let hideDone = true, activeProject = '', sortByModified = false, searchQuery = '';
+let viewingProjects = false;
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
   const k = localStorage.getItem('gtd_api_key');
   const c = localStorage.getItem('gtd_client_id');
@@ -303,8 +346,7 @@ window.onload = () => {
   if (h !== null) hideDone = h === 'true';
   if (p !== null) activeProject = p;
   if (s !== null) sortByModified = s === 'true';
-  updateHideDoneBtn();
-  updateSortBtn();
+  updateHideDoneBtn(); updateSortBtn();
   if (k) connect();
 };
 
@@ -316,10 +358,10 @@ async function connect() {
   if (CLIENT_ID) localStorage.setItem('gtd_client_id', CLIENT_ID);
   setLoading(true);
   try {
-    await loadTasks();
+    await Promise.all([loadTasks(), loadProjects()]);
     document.getElementById('setup-screen').style.display = 'none';
     document.getElementById('app').style.display = 'flex';
-    buildNav(); buildProjectFilter(); renderTasks();
+    buildNav(); buildProjectFilter(); renderCurrent();
   } catch(e) {
     console.error(e);
     toast('Connection failed — check API key & sheet sharing');
@@ -327,107 +369,46 @@ async function connect() {
   setLoading(false);
 }
 
-// ── SEARCH ────────────────────────────────────────────────────────────────────
-function onSearchInput() {
-  searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
-  document.getElementById('search-clear').classList.toggle('show', searchQuery.length > 0);
-  renderTasks();
-}
-function clearSearch() {
-  document.getElementById('search-input').value = '';
-  searchQuery = '';
-  document.getElementById('search-clear').classList.remove('show');
-  renderTasks();
-}
-function matchesSearch(t, q) {
-  if (!q) return true;
-  return t.task.toLowerCase().includes(q) || t.project.toLowerCase().includes(q) || t.notes.toLowerCase().includes(q);
-}
-function highlight(text, q) {
-  if (!q) return esc(text);
-  const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return esc(text).replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
-}
-
-// ── SORT ──────────────────────────────────────────────────────────────────────
-function toggleSort() {
-  sortByModified = !sortByModified;
-  localStorage.setItem('gtd_sort_modified', sortByModified);
-  updateSortBtn(); renderTasks();
-}
-function updateSortBtn() {
-  const btn = document.getElementById('btn-sort');
-  if (!btn) return;
-  btn.classList.toggle('active', sortByModified);
-  btn.textContent = sortByModified ? '↕ modified' : '↕ default';
-}
-
-// ── HIDE DONE ─────────────────────────────────────────────────────────────────
-function toggleHideDone() {
-  hideDone = !hideDone;
-  localStorage.setItem('gtd_hide_done', hideDone);
-  updateHideDoneBtn(); renderTasks();
-}
-function updateHideDoneBtn() {
-  const btn = document.getElementById('btn-hide-done');
-  if (!btn) return;
-  btn.classList.toggle('active', hideDone);
-  btn.textContent = hideDone ? '✓ hide done' : '✓ show done';
-}
-
-// ── PROJECT FILTER ────────────────────────────────────────────────────────────
-function getProjects() {
-  const seen = new Set();
-  tasks.forEach(t => { if (t.project) seen.add(t.project); });
-  return [...seen].sort((a, b) => a.localeCompare(b));
-}
-
-function buildProjectFilter() {
-  const sel = document.getElementById('project-filter');
-  if (!sel) return;
-  const projects = getProjects();
-  const hasUnassigned = tasks.some(t => !t.project);
-  sel.innerHTML =
-    `<option value="">All projects</option>` +
-    (hasUnassigned ? `<option value="${NO_PROJECT}"${activeProject===NO_PROJECT?' selected':''}>No project</option>` : '') +
-    projects.map(p => `<option value="${esc(p)}"${activeProject===p?' selected':''}>${esc(p)}</option>`).join('');
-  sel.classList.toggle('active', !!activeProject);
-}
-
-function onProjectFilterChange() {
-  const sel = document.getElementById('project-filter');
-  activeProject = sel.value;
-  localStorage.setItem('gtd_active_project', activeProject);
-  sel.classList.toggle('active', !!activeProject);
-  renderTasks();
-}
-
-// ── SHEETS READ ───────────────────────────────────────────────────────────────
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
 async function loadTasks() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A2:J2000`);
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
-  const r = await fetch(url);
+  const range = encodeURIComponent(`${TASKS_SHEET}!A2:J2000`);
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
   if (!r.ok) throw new Error(await r.text());
   const d = await r.json();
   tasks = (d.values || []).map((row, i) => ({
-    rowIndex:  i + 2,
-    task:      row[0] || '',
-    list:      row[1] || 'Inbox',
-    project:   row[2] || '',
-    due:       row[3] || '',
-    doc:       row[4] || '',
-    notes:     row[5] || '',
-    status:    row[6] || 'active',
-    id:        row[7] || uid(),
-    completed: row[8] || '',
-    modified:  row[9] || '',
+    rowIndex: i + 2,
+    task: row[0]||'', list: row[1]||'Inbox', project: row[2]||'',
+    due: row[3]||'', doc: row[4]||'', notes: row[5]||'',
+    status: row[6]||'active', id: row[7]||uid(),
+    completed: row[8]||'', modified: row[9]||'',
   })).filter(t => t.task && t.status !== 'deleted');
 }
 
-// ── SHEETS WRITE ──────────────────────────────────────────────────────────────
+async function loadProjects() {
+  const range = encodeURIComponent(`${PROJ_SHEET}!A2:E2000`);
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
+  if (!r.ok) { projects = []; return; } // sheet may not exist yet
+  const d = await r.json();
+  projects = (d.values || []).map((row, i) => ({
+    rowIndex: i + 2,
+    name: row[0]||'', status: row[1]||'active',
+    notes: row[2]||'', doc: row[3]||'', modified: row[4]||'',
+  })).filter(p => p.name && p.status !== 'deleted');
+}
+
+async function refreshAll() {
+  setLoading(true);
+  try {
+    await Promise.all([loadTasks(), loadProjects()]);
+    buildNav(); buildProjectFilter(); renderCurrent(); toast('Refreshed');
+  } catch(e) { toast('Refresh failed'); }
+  setLoading(false);
+}
+
+// ── AUTH / WRITE ──────────────────────────────────────────────────────────────
 async function requireAuth() {
   if (accessToken) return true;
-  if (!CLIENT_ID) { toast('OAuth Client ID needed to write tasks'); return false; }
+  if (!CLIENT_ID) { toast('OAuth Client ID needed to write'); return false; }
   return new Promise(resolve => {
     if (!tokenClient) {
       tokenClient = google.accounts.oauth2.initTokenClient({
@@ -458,47 +439,144 @@ async function sheetsWrite(method, range, values) {
   return r.ok;
 }
 
-async function ensureHeaders() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A1:J1`);
+async function ensureTaskHeaders() {
+  const range = encodeURIComponent(`${TASKS_SHEET}!A1:J1`);
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
   if (!r.ok) return;
   const d = await r.json();
-  if ((d.values || [[]])[0]?.[0]) return;
-  await sheetsWrite('PUT', `${SHEET_NAME}!A1:J1`,
-    ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed','Modified']);
+  if ((d.values||[[]])[0]?.[0]) return;
+  await sheetsWrite('PUT', `${TASKS_SHEET}!A1:J1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed','Modified']);
+}
+
+async function ensureProjHeaders() {
+  const range = encodeURIComponent(`${PROJ_SHEET}!A1:E1`);
+  const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
+  if (!r.ok) return;
+  const d = await r.json();
+  if ((d.values||[[]])[0]?.[0]) return;
+  await sheetsWrite('PUT', `${PROJ_SHEET}!A1:E1`, ['Project','Status','Notes','DocURL','Modified']);
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
 function buildNav() {
-  document.getElementById('nav-tabs').innerHTML = LISTS.map(l => `
-    <button class="nav-tab${l===activeList?' active':''}" onclick="switchList('${l}')">
+  document.getElementById('nav-tabs').innerHTML = LISTS.map(l => {
+    const isProj = l === 'Projects';
+    const isActive = isProj ? viewingProjects : (!viewingProjects && l === activeList);
+    const count = isProj
+      ? projects.filter(p => p.status === 'active').length
+      : tasks.filter(t => t.list === l && t.status !== 'done').length;
+    return `<button class="nav-tab${isActive?' active':''}" onclick="switchList('${l}')">
       <span class="dot" style="background:${LIST_COLORS[l]}"></span>
-      ${l}
-      <span class="badge">${countActive(l)}</span>
-    </button>`).join('');
+      ${l}<span class="badge">${count}</span>
+    </button>`;
+  }).join('');
 }
-function switchList(l) { activeList = l; buildNav(); renderTasks(); }
+
+function switchList(l) {
+  if (l === 'Projects') {
+    viewingProjects = true;
+    activeList = 'Projects';
+  } else {
+    viewingProjects = false;
+    activeList = l;
+  }
+  buildNav(); renderCurrent();
+}
+
 function countActive(l) { return tasks.filter(t => t.list===l && t.status!=='done').length; }
 
-// ── RENDER ────────────────────────────────────────────────────────────────────
+// ── RENDER DISPATCH ───────────────────────────────────────────────────────────
+function renderCurrent() {
+  if (viewingProjects) renderProjects();
+  else renderTasks();
+}
+
+function onFabClick() {
+  if (viewingProjects) openAddProjectModal();
+  else openAddTaskModal();
+}
+
+// ── PROJECT FILTER (header) ───────────────────────────────────────────────────
+function buildProjectFilter() {
+  const sel = document.getElementById('project-filter');
+  if (!sel) return;
+  const activeProjs = projects.filter(p => p.status !== 'deleted').sort((a,b) => a.name.localeCompare(b.name));
+  const hasUnassigned = tasks.some(t => !t.project);
+  sel.innerHTML =
+    `<option value="">All projects</option>` +
+    (hasUnassigned ? `<option value="${NO_PROJECT}"${activeProject===NO_PROJECT?' selected':''}>No project</option>` : '') +
+    activeProjs.map(p => `<option value="${esc(p.name)}"${activeProject===p.name?' selected':''}>${esc(p.name)}</option>`).join('');
+  sel.classList.toggle('active', !!activeProject);
+}
+
+function onProjectFilterChange() {
+  const sel = document.getElementById('project-filter');
+  activeProject = sel.value;
+  localStorage.setItem('gtd_active_project', activeProject);
+  sel.classList.toggle('active', !!activeProject);
+  renderTasks();
+}
+
+// ── RENDER PROJECTS ───────────────────────────────────────────────────────────
+function renderProjects() {
+  const main = document.getElementById('main-content');
+  const fab  = document.getElementById('fab');
+  fab.style.display = 'flex';
+
+  const sorted = [...projects].sort((a, b) => {
+    const so = (PROJ_STATUS_ORDER[a.status]??99) - (PROJ_STATUS_ORDER[b.status]??99);
+    return so !== 0 ? so : a.name.localeCompare(b.name);
+  });
+
+  if (!sorted.length) {
+    main.innerHTML = `<div class="projects-container"><div class="empty-state"><div class="empty-icon">🗂</div><p>No projects yet</p><p style="opacity:0.5;font-size:0.68rem;margin-top:0.25rem">Tap + to add one</p></div></div>`;
+    return;
+  }
+
+  const taskCountFor = name => tasks.filter(t => t.project === name && t.status !== 'done').length;
+
+  let html = '<div class="projects-container">';
+  let lastGroup = null;
+  const groupLabels = { active: 'Active', someday: 'Someday / Maybe', done: 'Done' };
+
+  for (const p of sorted) {
+    const group = p.status in PROJ_STATUS_ORDER ? p.status : 'active';
+    if (group !== lastGroup) {
+      html += `<div class="proj-group-label">${groupLabels[group]||group}</div>`;
+      lastGroup = group;
+    }
+    const count = taskCountFor(p.name);
+    const docLink = p.doc ? `<a class="proj-doc-link" href="${esc(p.doc)}" target="_blank" onclick="event.stopPropagation()">↗ doc</a>` : '';
+    const countStr = count > 0 ? `<span class="proj-task-count">${count} open</span>` : '';
+    const notesSnip = p.notes ? `<span class="proj-notes-snippet">${esc(p.notes)}</span>` : '';
+    html += `<div class="proj-card${p.status==='done'?' done-proj':''}" onclick="openEditProjectModal(${p.rowIndex})">
+      <div class="proj-status-dot ${p.status}"></div>
+      <span class="proj-name">${esc(p.name)}</span>
+      ${notesSnip}${countStr}${docLink}
+    </div>`;
+  }
+  html += '</div>';
+  main.innerHTML = html;
+}
+
+// ── RENDER TASKS ──────────────────────────────────────────────────────────────
 function renderTasks() {
+  const main = document.getElementById('main-content');
+  if (!main.querySelector('#task-list')) {
+    main.innerHTML = `<div class="task-list-container" id="task-list"></div>`;
+  }
   const c = document.getElementById('task-list');
   if (!c) return;
 
   let filtered = tasks.filter(t => t.list === activeList);
-  if (activeProject === NO_PROJECT) {
-    filtered = filtered.filter(t => !t.project);
-  } else if (activeProject) {
-    filtered = filtered.filter(t => t.project === activeProject);
-  }
+  if (activeProject === NO_PROJECT) filtered = filtered.filter(t => !t.project);
+  else if (activeProject) filtered = filtered.filter(t => t.project === activeProject);
   if (hideDone) filtered = filtered.filter(t => t.status !== 'done');
   if (searchQuery) filtered = filtered.filter(t => matchesSearch(t, searchQuery));
-
   if (sortByModified) {
     filtered = [...filtered].sort((a, b) => {
       if (!a.modified && !b.modified) return 0;
-      if (!a.modified) return 1;
-      if (!b.modified) return -1;
+      if (!a.modified) return 1; if (!b.modified) return -1;
       return b.modified.localeCompare(a.modified);
     });
   }
@@ -508,7 +586,7 @@ function renderTasks() {
     if (searchQuery) msg = `No results for "${searchQuery}"`;
     else if (activeProject === NO_PROJECT) msg = `No unassigned tasks in ${activeList}`;
     else if (activeProject) msg = `No tasks for "${activeProject}" in ${activeList}`;
-    else if (hideDone && tasks.filter(t => t.list===activeList).every(t => t.status==='done')) msg = 'All tasks done — toggle "hide done" to see them';
+    else if (hideDone && tasks.filter(t=>t.list===activeList).every(t=>t.status==='done')) msg = 'All done — toggle "hide done" to see them';
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">${listIcon(activeList)}</div><p>${msg}</p><p style="opacity:0.5;font-size:0.68rem;margin-top:0.25rem">Tap + to add something</p></div>`;
     return;
   }
@@ -521,126 +599,55 @@ function renderTasks() {
     const done = t.status === 'done';
     let dueTag = '';
     if (t.due) {
-      const d = new Date(t.due + 'T00:00:00');
+      const d = new Date(t.due+'T00:00:00');
       const lbl = d.toLocaleDateString('en-CA',{month:'short',day:'numeric'});
       dueTag = d < today ? `<span class="tag due-overdue">⚠ ${lbl}</span>`
              : d <= soon ? `<span class="tag due-soon">📅 ${lbl}</span>`
              :              `<span class="tag">📅 ${lbl}</span>`;
     }
-    const proj = t.project ? `<span class="tag project">◆ ${highlight(t.project, q)}</span>` : '';
-    const doc  = t.doc     ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
+    const proj = t.project ? `<span class="tag project">◆ ${highlight(t.project,q)}</span>` : '';
+    const doc  = t.doc ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
     const completedTag = done && t.completed ? `<span class="tag completed-on">done ${formatDate(t.completed)}</span>` : '';
     const overdue = !done && t.due && new Date(t.due+'T00:00:00') < today;
-    return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditModal(${t.rowIndex})">
+    return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditTaskModal(${t.rowIndex})">
       <div class="task-check${done?' checked':''}" onclick="toggleDone(event,${t.rowIndex})">${done?'✓':''}</div>
       <div class="task-body">
-        <span class="task-title">${highlight(t.task, q)}</span>
+        <span class="task-title">${highlight(t.task,q)}</span>
         <span class="task-meta">${proj}${dueTag}${doc}${completedTag}</span>
       </div>
     </div>`;
   }).join('');
 }
 
-function listIcon(l) { return {'Inbox':'📥','Next Actions':'⚡','Projects':'🗂','Waiting For':'⏳','Someday/Maybe':'🌱','Reference':'📚'}[l]||'•'; }
-function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function openDoc(e,url) { e.stopPropagation(); if(url) window.open(url,'_blank'); }
-function formatDate(d) {
-  if (!d) return '';
-  const dt = new Date(d + 'T00:00:00');
-  return isNaN(dt) ? d : dt.toLocaleDateString('en-CA', {month:'short', day:'numeric', year:'numeric'});
-}
-
-// ── TOGGLE DONE ───────────────────────────────────────────────────────────────
-async function toggleDone(e, ri) {
-  e.stopPropagation();
-  const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
-  const ns = t.status==='done' ? 'active' : 'done';
-  const completedDate = ns === 'done' ? todayStr() : '';
-  const modifiedDate = nowStr();
-  setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:J${ri}`,
-    [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate, modifiedDate]);
-  if (ok) {
-    t.status = ns; t.completed = completedDate; t.modified = modifiedDate;
-    buildNav(); renderTasks();
-    toast(ns==='done' ? 'Done ✓' : 'Reopened');
-  } else {
-    toast('Update failed — authorise write access in Settings');
-  }
-  setLoading(false);
-}
-
-// ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
-let acHighlight = -1;
-
-function acGetMatches(val) {
-  const projects = getProjects();
-  if (!val) return projects;
-  const lower = val.toLowerCase();
-  return projects.filter(p => p.toLowerCase().includes(lower));
-}
-function acRender(matches) {
-  const dd = document.getElementById('ac-dropdown');
-  if (!matches.length) { dd.classList.remove('open'); return; }
-  dd.innerHTML = matches.map(p =>
-    `<div class="autocomplete-item" data-val="${esc(p)}" onmousedown="acSelect('${esc(p)}')">${esc(p)}</div>`
-  ).join('');
-  acHighlight = -1;
-  dd.classList.add('open');
-}
-function acInput() { acRender(acGetMatches(document.getElementById('f-project').value)); }
-function acSelect(val) {
-  document.getElementById('f-project').value = val;
-  document.getElementById('ac-dropdown').classList.remove('open');
-  acHighlight = -1;
-}
-function acBlur() {
-  setTimeout(() => { document.getElementById('ac-dropdown').classList.remove('open'); acHighlight = -1; }, 150);
-}
-function acKeydown(e) {
-  const dd = document.getElementById('ac-dropdown');
-  const items = dd.querySelectorAll('.autocomplete-item');
-  if (!dd.classList.contains('open')) return;
-  if (e.key === 'ArrowDown') { e.preventDefault(); acHighlight = Math.min(acHighlight+1, items.length-1); acUpdateHighlight(items); }
-  else if (e.key === 'ArrowUp') { e.preventDefault(); acHighlight = Math.max(acHighlight-1, 0); acUpdateHighlight(items); }
-  else if (e.key === 'Enter' && acHighlight >= 0) { e.preventDefault(); acSelect(items[acHighlight].dataset.val); }
-  else if (e.key === 'Escape') { dd.classList.remove('open'); }
-}
-function acUpdateHighlight(items) {
-  items.forEach((el, i) => el.classList.toggle('highlighted', i === acHighlight));
-  if (acHighlight >= 0) items[acHighlight].scrollIntoView({ block: 'nearest' });
-}
-
-// ── ADD / EDIT MODAL ──────────────────────────────────────────────────────────
-function openAddModal() {
-  editingRowIndex = null;
-  document.getElementById('modal-title').textContent = 'New Task';
+// ── TASK MODAL ────────────────────────────────────────────────────────────────
+function openAddTaskModal() {
+  editingTaskRow = null;
+  document.getElementById('task-modal-title').textContent = 'New Task';
   document.getElementById('f-task').value = '';
-  document.getElementById('f-list').value = activeList;
+  document.getElementById('f-list').value = viewingProjects ? 'Next Actions' : activeList;
   document.getElementById('f-due').value = '';
-  // Pre-fill project only if a named project is active (not "no project")
   document.getElementById('f-project').value = (activeProject && activeProject !== NO_PROJECT) ? activeProject : '';
   document.getElementById('f-doc').value = '';
   document.getElementById('f-notes').value = '';
-  document.getElementById('btn-delete').style.display = 'none';
+  document.getElementById('btn-delete-task').style.display = 'none';
   document.getElementById('ac-dropdown').classList.remove('open');
-  document.getElementById('task-modal').classList.add('open');
+  openModal('task-modal');
   setTimeout(()=>document.getElementById('f-task').focus(), 300);
 }
 
-function openEditModal(ri) {
+function openEditTaskModal(ri) {
   const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
-  editingRowIndex = ri;
-  document.getElementById('modal-title').textContent = 'Edit Task';
+  editingTaskRow = ri;
+  document.getElementById('task-modal-title').textContent = 'Edit Task';
   document.getElementById('f-task').value    = t.task;
   document.getElementById('f-list').value    = t.list;
   document.getElementById('f-due').value     = t.due;
   document.getElementById('f-project').value = t.project;
   document.getElementById('f-doc').value     = t.doc;
   document.getElementById('f-notes').value   = t.notes;
-  document.getElementById('btn-delete').style.display = 'block';
+  document.getElementById('btn-delete-task').style.display = 'block';
   document.getElementById('ac-dropdown').classList.remove('open');
-  document.getElementById('task-modal').classList.add('open');
+  openModal('task-modal');
 }
 
 async function saveTask() {
@@ -652,61 +659,227 @@ async function saveTask() {
   const doc      = document.getElementById('f-doc').value.trim();
   const notes    = document.getElementById('f-notes').value.trim();
   const modified = nowStr();
+
+  // Auto-create project if new name typed
+  if (project && !projects.find(p => p.name === project)) {
+    await ensureProjHeaders();
+    await sheetsWrite('POST', `${PROJ_SHEET}!A:E`, [project, 'active', '', '', modified]);
+    await loadProjects();
+  }
+
   setLoading(true);
-  if (editingRowIndex) {
-    const t = tasks.find(x=>x.rowIndex===editingRowIndex);
-    const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:J${editingRowIndex}`,
-      [task, list, project, due, doc, notes, t?t.status:'active', t?t.id:uid(), t?t.completed:'', modified]);
+  if (editingTaskRow) {
+    const t = tasks.find(x=>x.rowIndex===editingTaskRow);
+    const ok = await sheetsWrite('PUT', `${TASKS_SHEET}!A${editingTaskRow}:J${editingTaskRow}`,
+      [task,list,project,due,doc,notes,t?t.status:'active',t?t.id:uid(),t?t.completed:'',modified]);
     if (ok) {
       if(t){t.task=task;t.list=list;t.due=due;t.project=project;t.doc=doc;t.notes=notes;t.modified=modified;}
       toast('Updated ✓');
     } else toast('Update failed');
   } else {
-    await ensureHeaders();
-    const ok = await sheetsWrite('POST', `${SHEET_NAME}!A:J`,
-      [task, list, project, due, doc, notes, 'active', uid(), '', modified]);
+    await ensureTaskHeaders();
+    const ok = await sheetsWrite('POST', `${TASKS_SHEET}!A:J`,
+      [task,list,project,due,doc,notes,'active',uid(),'',modified]);
     if (ok) { await loadTasks(); toast('Task added ✓'); }
     else toast('Add failed — check OAuth');
   }
-  closeModal();
-  buildNav(); buildProjectFilter(); renderTasks();
+  closeModal('task-modal');
+  buildNav(); buildProjectFilter(); renderCurrent();
   setLoading(false);
 }
 
 async function deleteTask() {
-  if (!editingRowIndex || !confirm('Delete this task?')) return;
-  const t = tasks.find(x=>x.rowIndex===editingRowIndex); if(!t) return;
+  if (!editingTaskRow || !confirm('Delete this task?')) return;
+  const t = tasks.find(x=>x.rowIndex===editingTaskRow); if(!t) return;
   setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:J${editingRowIndex}`,
-    [t.task, t.list, t.project, t.due, t.doc, t.notes, 'deleted', t.id, t.completed, t.modified]);
+  const ok = await sheetsWrite('PUT', `${TASKS_SHEET}!A${editingTaskRow}:J${editingTaskRow}`,
+    [t.task,t.list,t.project,t.due,t.doc,t.notes,'deleted',t.id,t.completed,t.modified]);
   if (ok) {
-    tasks = tasks.filter(x=>x.rowIndex!==editingRowIndex);
-    toast('Deleted'); closeModal();
-    buildNav(); buildProjectFilter(); renderTasks();
+    tasks = tasks.filter(x=>x.rowIndex!==editingTaskRow);
+    toast('Deleted'); closeModal('task-modal');
+    buildNav(); buildProjectFilter(); renderCurrent();
   } else toast('Delete failed');
   setLoading(false);
 }
 
-// ── REFRESH ───────────────────────────────────────────────────────────────────
-async function refreshTasks() {
+async function toggleDone(e, ri) {
+  e.stopPropagation();
+  const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
+  const ns = t.status==='done' ? 'active' : 'done';
+  const completedDate = ns==='done' ? todayStr() : '';
+  const modifiedDate = nowStr();
   setLoading(true);
-  try { await loadTasks(); buildNav(); buildProjectFilter(); renderTasks(); toast('Refreshed'); }
-  catch(e) { toast('Refresh failed'); }
+  const ok = await sheetsWrite('PUT', `${TASKS_SHEET}!A${ri}:J${ri}`,
+    [t.task,t.list,t.project,t.due,t.doc,t.notes,ns,t.id,completedDate,modifiedDate]);
+  if (ok) {
+    t.status=ns; t.completed=completedDate; t.modified=modifiedDate;
+    buildNav(); renderTasks(); toast(ns==='done'?'Done ✓':'Reopened');
+  } else toast('Update failed — authorise write access in Settings');
   setLoading(false);
+}
+
+// ── PROJECT MODAL ─────────────────────────────────────────────────────────────
+function openAddProjectModal() {
+  editingProjRow = null;
+  document.getElementById('proj-modal-title').textContent = 'New Project';
+  document.getElementById('pf-name').value   = '';
+  document.getElementById('pf-status').value = 'active';
+  document.getElementById('pf-notes').value  = '';
+  document.getElementById('pf-doc').value    = '';
+  document.getElementById('btn-delete-proj').style.display = 'none';
+  openModal('proj-modal');
+  setTimeout(()=>document.getElementById('pf-name').focus(), 300);
+}
+
+function openEditProjectModal(ri) {
+  const p = projects.find(x=>x.rowIndex===ri); if(!p) return;
+  editingProjRow = ri;
+  document.getElementById('proj-modal-title').textContent = 'Edit Project';
+  document.getElementById('pf-name').value   = p.name;
+  document.getElementById('pf-status').value = p.status;
+  document.getElementById('pf-notes').value  = p.notes;
+  document.getElementById('pf-doc').value    = p.doc;
+  document.getElementById('btn-delete-proj').style.display = 'block';
+  openModal('proj-modal');
+}
+
+async function saveProject() {
+  const name = document.getElementById('pf-name').value.trim();
+  if (!name) { toast('Project name is required'); return; }
+  const status   = document.getElementById('pf-status').value;
+  const notes    = document.getElementById('pf-notes').value.trim();
+  const doc      = document.getElementById('pf-doc').value.trim();
+  const modified = nowStr();
+  setLoading(true);
+  if (editingProjRow) {
+    const ok = await sheetsWrite('PUT', `${PROJ_SHEET}!A${editingProjRow}:E${editingProjRow}`,
+      [name, status, notes, doc, modified]);
+    if (ok) {
+      const p = projects.find(x=>x.rowIndex===editingProjRow);
+      if(p){p.name=name;p.status=status;p.notes=notes;p.doc=doc;p.modified=modified;}
+      toast('Updated ✓');
+    } else toast('Update failed');
+  } else {
+    await ensureProjHeaders();
+    const ok = await sheetsWrite('POST', `${PROJ_SHEET}!A:E`, [name, status, notes, doc, modified]);
+    if (ok) { await loadProjects(); toast('Project added ✓'); }
+    else toast('Add failed — check OAuth');
+  }
+  closeModal('proj-modal');
+  buildNav(); buildProjectFilter(); renderCurrent();
+  setLoading(false);
+}
+
+async function deleteProject() {
+  if (!editingProjRow || !confirm('Delete this project?')) return;
+  const p = projects.find(x=>x.rowIndex===editingProjRow); if(!p) return;
+  setLoading(true);
+  const ok = await sheetsWrite('PUT', `${PROJ_SHEET}!A${editingProjRow}:E${editingProjRow}`,
+    [p.name, 'deleted', p.notes, p.doc, nowStr()]);
+  if (ok) {
+    projects = projects.filter(x=>x.rowIndex!==editingProjRow);
+    toast('Deleted'); closeModal('proj-modal');
+    buildNav(); buildProjectFilter(); renderCurrent();
+  } else toast('Delete failed');
+  setLoading(false);
+}
+
+// ── AUTOCOMPLETE (from Projects sheet) ───────────────────────────────────────
+let acHighlight = -1;
+
+function acGetMatches(val) {
+  const active  = projects.filter(p => p.status==='active').sort((a,b)=>a.name.localeCompare(b.name));
+  const someday = projects.filter(p => p.status==='someday').sort((a,b)=>a.name.localeCompare(b.name));
+  const all = [...active, ...someday]; // exclude done from autocomplete
+  if (!val) return all;
+  const lower = val.toLowerCase();
+  return all.filter(p => p.name.toLowerCase().includes(lower));
+}
+
+function acRender(matches) {
+  const dd = document.getElementById('ac-dropdown');
+  if (!matches.length) { dd.classList.remove('open'); return; }
+  dd.innerHTML = matches.map(p => {
+    const dotColor = p.status === 'someday' ? 'var(--someday)' : 'var(--inbox)';
+    return `<div class="autocomplete-item${p.status==='someday'?' someday-item':''}" data-val="${esc(p.name)}" onmousedown="acSelect('${esc(p.name)}')">`
+      + `<span class="ac-dot" style="background:${dotColor}"></span>${esc(p.name)}</div>`;
+  }).join('');
+  acHighlight = -1;
+  dd.classList.add('open');
+}
+function acInput() { acRender(acGetMatches(document.getElementById('f-project').value)); }
+function acSelect(val) {
+  document.getElementById('f-project').value = val;
+  document.getElementById('ac-dropdown').classList.remove('open');
+  acHighlight = -1;
+}
+function acBlur() {
+  setTimeout(() => { document.getElementById('ac-dropdown').classList.remove('open'); acHighlight=-1; }, 150);
+}
+function acKeydown(e) {
+  const dd = document.getElementById('ac-dropdown');
+  const items = dd.querySelectorAll('.autocomplete-item');
+  if (!dd.classList.contains('open')) return;
+  if (e.key==='ArrowDown'){e.preventDefault();acHighlight=Math.min(acHighlight+1,items.length-1);acUpdateHighlight(items);}
+  else if(e.key==='ArrowUp'){e.preventDefault();acHighlight=Math.max(acHighlight-1,0);acUpdateHighlight(items);}
+  else if(e.key==='Enter'&&acHighlight>=0){e.preventDefault();acSelect(items[acHighlight].dataset.val);}
+  else if(e.key==='Escape'){dd.classList.remove('open');}
+}
+function acUpdateHighlight(items) {
+  items.forEach((el,i)=>el.classList.toggle('highlighted',i===acHighlight));
+  if(acHighlight>=0) items[acHighlight].scrollIntoView({block:'nearest'});
+}
+
+// ── SEARCH / SORT / FILTERS ───────────────────────────────────────────────────
+function onSearchInput() {
+  searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+  document.getElementById('search-clear').classList.toggle('show', searchQuery.length > 0);
+  renderTasks();
+}
+function clearSearch() {
+  document.getElementById('search-input').value=''; searchQuery='';
+  document.getElementById('search-clear').classList.remove('show'); renderTasks();
+}
+function matchesSearch(t,q) {
+  return t.task.toLowerCase().includes(q)||t.project.toLowerCase().includes(q)||t.notes.toLowerCase().includes(q);
+}
+function highlight(text,q) {
+  if(!q) return esc(text);
+  const eq = q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return esc(text).replace(new RegExp(eq,'gi'),m=>`<mark>${m}</mark>`);
+}
+function toggleSort() {
+  sortByModified=!sortByModified;
+  localStorage.setItem('gtd_sort_modified',sortByModified);
+  updateSortBtn(); renderTasks();
+}
+function updateSortBtn() {
+  const btn=document.getElementById('btn-sort'); if(!btn) return;
+  btn.classList.toggle('active',sortByModified);
+  btn.textContent=sortByModified?'↕ modified':'↕ default';
+}
+function toggleHideDone() {
+  hideDone=!hideDone; localStorage.setItem('gtd_hide_done',hideDone);
+  updateHideDoneBtn(); renderTasks();
+}
+function updateHideDoneBtn() {
+  const btn=document.getElementById('btn-hide-done'); if(!btn) return;
+  btn.classList.toggle('active',hideDone);
+  btn.textContent=hideDone?'✓ hide done':'✓ show done';
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────────────────────
 let settingsOpen = false;
 function toggleSettings() {
-  const main = document.getElementById('main-content');
-  const fab  = document.getElementById('fab');
-  settingsOpen = !settingsOpen;
-  if (!settingsOpen) {
-    main.innerHTML = `<div class="task-list-container" id="task-list"></div>`;
-    fab.style.display = 'flex'; renderTasks(); return;
+  const main=document.getElementById('main-content'), fab=document.getElementById('fab');
+  settingsOpen=!settingsOpen;
+  if(!settingsOpen){
+    viewingProjects=false; activeList=activeList==='Projects'?'Inbox':activeList;
+    main.innerHTML=`<div class="task-list-container" id="task-list"></div>`;
+    fab.style.display='flex'; buildNav(); renderTasks(); return;
   }
-  fab.style.display = 'none';
-  main.innerHTML = `
+  fab.style.display='none';
+  main.innerHTML=`
     <div class="settings-container">
       <h2>Settings</h2>
       <div class="settings-section">
@@ -723,7 +896,15 @@ function toggleSettings() {
       </div>
       <div class="settings-section">
         <h3>Sheet Column Guide</h3>
-        <div class="settings-val">A: Task &nbsp;·&nbsp; B: List &nbsp;·&nbsp; C: Project<br>D: Due (YYYY-MM-DD) &nbsp;·&nbsp; E: Doc URL<br>F: Notes &nbsp;·&nbsp; G: Status &nbsp;·&nbsp; H: ID<br>I: Completed (YYYY-MM-DD) &nbsp;·&nbsp; J: Modified<br><br>⚠ Don't rename, reorder, or delete header row.</div>
+        <div class="settings-val">
+          <strong>Tasks sheet:</strong><br>
+          A: Task · B: List · C: Project · D: Due<br>
+          E: DocURL · F: Notes · G: Status · H: ID<br>
+          I: Completed · J: Modified<br><br>
+          <strong>Projects sheet:</strong><br>
+          A: Project · B: Status · C: Notes · D: DocURL · E: Modified<br><br>
+          ⚠ Don't rename, reorder, or delete header rows.
+        </div>
       </div>
       <div class="settings-section">
         <h3>Update Credentials</h3>
@@ -739,40 +920,32 @@ function toggleSettings() {
 }
 
 function saveCreds() {
-  API_KEY   = document.getElementById('s-api').value.trim();
-  CLIENT_ID = document.getElementById('s-cid').value.trim();
-  localStorage.setItem('gtd_api_key', API_KEY);
-  if (CLIENT_ID) localStorage.setItem('gtd_client_id', CLIENT_ID);
+  API_KEY=document.getElementById('s-api').value.trim();
+  CLIENT_ID=document.getElementById('s-cid').value.trim();
+  localStorage.setItem('gtd_api_key',API_KEY);
+  if(CLIENT_ID) localStorage.setItem('gtd_client_id',CLIENT_ID);
   toast('Credentials saved');
 }
 
 // ── MODAL HELPERS ─────────────────────────────────────────────────────────────
-function closeModal() {
-  document.getElementById('task-modal').classList.remove('open');
-  document.getElementById('ac-dropdown').classList.remove('open');
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  const dd=document.getElementById('ac-dropdown'); if(dd) dd.classList.remove('open');
 }
-function closeModalOnOverlay(e) { if(e.target===document.getElementById('task-modal')) closeModal(); }
+function closeModalOnOverlay(e, id) { if(e.target===document.getElementById(id)) closeModal(id); }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-}
-function nowStr() {
-  return new Date().toISOString().slice(0,16).replace('T',' ');
-}
+function listIcon(l){return{'Inbox':'📥','Next Actions':'⚡','Projects':'🗂','Waiting For':'⏳','Someday/Maybe':'🌱','Reference':'📚'}[l]||'•';}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function openDoc(e,url){e.stopPropagation();if(url)window.open(url,'_blank');}
+function formatDate(d){if(!d)return'';const dt=new Date(d+'T00:00:00');return isNaN(dt)?d:dt.toLocaleDateString('en-CA',{month:'short',day:'numeric',year:'numeric'});}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function nowStr(){return new Date().toISOString().slice(0,16).replace('T',' ');}
 let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg; el.classList.add('show');
-  clearTimeout(toastTimer); toastTimer = setTimeout(()=>el.classList.remove('show'), 2200);
-}
-function setLoading(on) {
-  const b = document.getElementById('loading-bar');
-  b.style.width = on?'70%':'100%';
-  if(!on) setTimeout(()=>{ b.style.width='0%'; },300);
-}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2200);}
+function setLoading(on){const b=document.getElementById('loading-bar');b.style.width=on?'70%':'100%';if(!on)setTimeout(()=>{b.style.width='0%';},300);}
 </script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
