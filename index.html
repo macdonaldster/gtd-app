@@ -95,6 +95,7 @@ input:focus { border-color: var(--accent); }
 .tag.due-overdue { color: var(--waiting); border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
 .tag.doc { color: var(--someday); border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); cursor: pointer; }
 .tag.doc:hover { background: rgba(96,165,250,0.15); }
+.tag.completed-on { color: var(--text3); border-color: var(--text3); font-style: italic; }
 
 .fab { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 54px; height: 54px; background: var(--accent); border: none; border-radius: 50%; color: white; font-size: 1.4rem; cursor: pointer; z-index: 200; box-shadow: 0 4px 24px var(--accent-glow); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
 .fab:active { transform: scale(0.91); }
@@ -279,19 +280,19 @@ async function connect() {
 
 // ── SHEETS READ ───────────────────────────────────────────────────────────────
 async function loadTasks() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A2:H2000`);
+  const range = encodeURIComponent(`${SHEET_NAME}!A2:I2000`);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(await r.text());
   const d = await r.json();
   tasks = (d.values || []).map((row, i) => ({
-    rowIndex: i + 2,
-    task:    row[0] || '',
-    list:    row[1] || 'Inbox',
-    project: row[2] || '',
-    due:     row[3] || '',
-    doc:     row[4] || '',
-    notes:   row[5] || '',
+    rowIndex:  i + 2,
+    task:      row[0] || '',
+    list:      row[1] || 'Inbox',
+    project:   row[2] || '',
+    due:       row[3] || '',
+    doc:       row[4] || '',
+    notes:     row[5] || '',
     status:    row[6] || 'active',
     id:        row[7] || uid(),
     completed: row[8] || '',
@@ -333,12 +334,12 @@ async function sheetsWrite(method, range, values) {
 }
 
 async function ensureHeaders() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A1:H1`);
+  const range = encodeURIComponent(`${SHEET_NAME}!A1:I1`);
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
   if (!r.ok) return;
   const d = await r.json();
   if ((d.values || [[]])[0]?.[0]) return; // already set
-  await sheetsWrite('PUT', `${SHEET_NAME}!A1:H1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID']);
+  await sheetsWrite('PUT', `${SHEET_NAME}!A1:I1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed']);
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
@@ -377,12 +378,14 @@ function renderTasks() {
     }
     const proj = t.project ? `<span class="tag project">◆ ${esc(t.project)}</span>` : '';
     const doc  = t.doc     ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
+    const completedTag = done && t.completed
+      ? `<span class="tag completed-on">✓ ${formatDate(t.completed)}</span>` : '';
     const overdue = !done && t.due && new Date(t.due+'T00:00:00') < today;
     return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditModal(${t.rowIndex})">
       <div class="task-check${done?' checked':''}" onclick="toggleDone(event,${t.rowIndex})">${done?'✓':''}</div>
       <div class="task-body">
         <div class="task-title">${esc(t.task)}</div>
-        <div class="task-meta">${proj}${dueTag}${doc}</div>
+        <div class="task-meta">${proj}${dueTag}${doc}${completedTag}</div>
       </div>
     </div>`;
   }).join('');
@@ -391,16 +394,29 @@ function renderTasks() {
 function listIcon(l) { return {'Inbox':'📥','Next Actions':'⚡','Projects':'🗂','Waiting For':'⏳','Someday/Maybe':'🌱','Reference':'📚'}[l]||'•'; }
 function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function openDoc(e,url) { e.stopPropagation(); if(url) window.open(url,'_blank'); }
+function formatDate(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T00:00:00');
+  return isNaN(dt) ? d : dt.toLocaleDateString('en-CA', {month:'short', day:'numeric', year:'numeric'});
+}
 
 // ── TOGGLE DONE ───────────────────────────────────────────────────────────────
 async function toggleDone(e, ri) {
   e.stopPropagation();
   const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
   const ns = t.status==='done' ? 'active' : 'done';
+  const completedDate = ns === 'done' ? today() : '';
   setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:H${ri}`, [t.task,t.list,t.project,t.due,t.doc,t.notes,ns,t.id]);
-  if (ok) { t.status=ns; buildNav(); renderTasks(); toast(ns==='done'?'Done ✓':'Reopened'); }
-  else toast('Update failed — authorise write access in Settings');
+  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:I${ri}`,
+    [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate]);
+  if (ok) {
+    t.status = ns;
+    t.completed = completedDate;
+    buildNav(); renderTasks();
+    toast(ns==='done' ? 'Done ✓' : 'Reopened');
+  } else {
+    toast('Update failed — authorise write access in Settings');
+  }
   setLoading(false);
 }
 
@@ -444,15 +460,15 @@ async function saveTask() {
   setLoading(true);
   if (editingRowIndex) {
     const t = tasks.find(x=>x.rowIndex===editingRowIndex);
-    const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:H${editingRowIndex}`,
-      [task,list,project,due,doc,notes,t?t.status:'active',t?t.id:uid()]);
+    const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:I${editingRowIndex}`,
+      [task, list, project, due, doc, notes, t?t.status:'active', t?t.id:uid(), t?t.completed:'']);
     if (ok) {
       if(t){t.task=task;t.list=list;t.due=due;t.project=project;t.doc=doc;t.notes=notes;}
       toast('Updated ✓');
     } else toast('Update failed');
   } else {
     await ensureHeaders();
-    const ok = await sheetsWrite('POST', `${SHEET_NAME}!A:H`, [task,list,project,due,doc,notes,'active',uid()]);
+    const ok = await sheetsWrite('POST', `${SHEET_NAME}!A:I`, [task, list, project, due, doc, notes, 'active', uid(), '']);
     if (ok) { await loadTasks(); toast('Task added ✓'); }
     else toast('Add failed — check OAuth');
   }
@@ -463,8 +479,8 @@ async function deleteTask() {
   if (!editingRowIndex || !confirm('Delete this task?')) return;
   const t = tasks.find(x=>x.rowIndex===editingRowIndex); if(!t) return;
   setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:H${editingRowIndex}`,
-    [t.task,t.list,t.project,t.due,t.doc,t.notes,'deleted',t.id]);
+  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:I${editingRowIndex}`,
+    [t.task, t.list, t.project, t.due, t.doc, t.notes, 'deleted', t.id, t.completed]);
   if (ok) { tasks=tasks.filter(x=>x.rowIndex!==editingRowIndex); toast('Deleted'); closeModal(); buildNav(); renderTasks(); }
   else toast('Delete failed');
   setLoading(false);
@@ -506,7 +522,7 @@ function toggleSettings() {
       </div>
       <div class="settings-section">
         <h3>Sheet Column Guide</h3>
-        <div class="settings-val">A: Task &nbsp;·&nbsp; B: List &nbsp;·&nbsp; C: Project<br>D: Due (YYYY-MM-DD) &nbsp;·&nbsp; E: Doc URL<br>F: Notes &nbsp;·&nbsp; G: Status &nbsp;·&nbsp; H: ID<br><br>⚠ Don't rename, reorder, or delete header row.</div>
+        <div class="settings-val">A: Task &nbsp;·&nbsp; B: List &nbsp;·&nbsp; C: Project<br>D: Due (YYYY-MM-DD) &nbsp;·&nbsp; E: Doc URL<br>F: Notes &nbsp;·&nbsp; G: Status &nbsp;·&nbsp; H: ID<br>I: Completed (YYYY-MM-DD)<br><br>⚠ Don't rename, reorder, or delete header row.</div>
       </div>
       <div class="settings-section">
         <h3>Update Credentials</h3>
@@ -531,6 +547,10 @@ function closeModalOnOverlay(e) { if(e.target===document.getElementById('task-mo
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
