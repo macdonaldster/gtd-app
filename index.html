@@ -58,17 +58,25 @@ input:focus { border-color: var(--accent); }
 /* APP */
 #app { display: none; flex-direction: column; min-height: 100vh; }
 .app-header { position: sticky; top: 0; z-index: 100; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; flex: 1; color: var(--text); min-width: 120px; }
-.app-version { font-size: 0.58rem; color: var(--text3); align-self: flex-end; padding-bottom: 0.1rem; }
+.app-title { font-family: var(--serif); font-size: 1.15rem; font-weight: 300; font-style: italic; color: var(--text); min-width: 110px; }
+.app-version { font-size: 0.58rem; color: var(--text3); padding-bottom: 0.1rem; align-self: flex-end; }
+
+/* Search box */
+.search-wrap { position: relative; flex: 1; min-width: 100px; max-width: 220px; }
+.search-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 1.6rem 0.3rem 0.6rem; color: var(--text); font-family: var(--mono); font-size: 0.75rem; outline: none; transition: border-color 0.15s; }
+.search-wrap input:focus { border-color: var(--accent); }
+.search-wrap input::placeholder { color: var(--text3); }
+.search-clear { position: absolute; right: 0.4rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0; display: none; }
+.search-clear.show { display: block; }
+
 .icon-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); cursor: pointer; font-size: 0.75rem; transition: all 0.12s; font-family: var(--mono); line-height: 1.4; white-space: nowrap; }
 .icon-btn:hover { color: var(--text); border-color: var(--text2); }
 .icon-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-/* Project filter select in header */
-#project-filter { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); font-family: var(--mono); font-size: 0.75rem; cursor: pointer; outline: none; transition: all 0.12s; appearance: none; -webkit-appearance: none; max-width: 140px; }
+#project-filter { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.55rem; color: var(--text2); font-family: var(--mono); font-size: 0.75rem; cursor: pointer; outline: none; transition: all 0.12s; appearance: none; -webkit-appearance: none; max-width: 130px; }
 #project-filter:hover { border-color: var(--text2); color: var(--text); }
 #project-filter:focus { border-color: var(--accent); color: var(--text); }
-#project-filter.active { background: var(--surface2); border-color: var(--projects); color: var(--projects); }
+#project-filter.active { border-color: var(--projects); color: var(--projects); }
 
 /* NAV */
 .nav-tabs { display: flex; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
@@ -95,6 +103,7 @@ input:focus { border-color: var(--accent); }
 .task-check.checked { background: var(--accent); border-color: var(--accent); color: #fff; }
 .task-body { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
 .task-title { font-size: 0.82rem; line-height: 1.4; color: var(--text); }
+.task-title mark { background: #fff3a0; color: var(--text); border-radius: 2px; padding: 0 1px; }
 .task-card.completed .task-title { text-decoration: line-through; color: var(--text2); }
 .task-meta { display: flex; flex-wrap: wrap; gap: 0.25rem; align-items: center; }
 .tag { font-size: 0.58rem; letter-spacing: 0.04em; padding: 0.08rem 0.38rem; border-radius: 20px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); white-space: nowrap; }
@@ -131,7 +140,7 @@ select:focus { border-color: var(--accent); }
 .btn-secondary:hover { color: var(--text); border-color: var(--text2); }
 .btn-danger { color: var(--waiting); border-color: var(--waiting); background: transparent; }
 
-/* Autocomplete wrapper */
+/* Autocomplete */
 .autocomplete-wrap { position: relative; margin-top: 0.3rem; }
 .autocomplete-wrap input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; color: var(--text); font-family: var(--mono); font-size: 0.8rem; outline: none; transition: border-color 0.15s; margin-top: 0; }
 .autocomplete-wrap input:focus { border-color: var(--accent); }
@@ -190,9 +199,14 @@ select:focus { border-color: var(--accent); }
 <div id="app">
   <header class="app-header">
     <div class="app-title">get<em>things</em>done</div>
-    <span class="app-version">v5</span>
+    <span class="app-version">v6</span>
+    <div class="search-wrap">
+      <input type="text" id="search-input" placeholder="search…" oninput="onSearchInput()" autocomplete="off" />
+      <button class="search-clear" id="search-clear" onclick="clearSearch()" title="Clear search">×</button>
+    </div>
     <select id="project-filter" onchange="onProjectFilterChange()" title="Filter by project"></select>
     <button class="icon-btn active" id="btn-hide-done" onclick="toggleHideDone()" title="Toggle completed tasks">✓ hide done</button>
+    <button class="icon-btn" id="btn-sort" onclick="toggleSort()" title="Sort order">↕ modified</button>
     <button class="icon-btn" onclick="refreshTasks()" title="Refresh">↻</button>
     <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
   </header>
@@ -258,20 +272,22 @@ select:focus { border-color: var(--accent); }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-const VERSION    = 5;
+const VERSION    = 6;
 const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
 const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
 const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','Reference'];
 const LIST_COLORS = { 'Inbox':'#1a8f6a','Next Actions':'#5b4ee8','Projects':'#b07000','Waiting For':'#c03030','Someday/Maybe':'#2060b0','Reference':'#7030a0' };
-// Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed
+// Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Completed J=Modified
 
 // ── STATE ────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
 let tasks = [], activeList = 'Inbox', editingRowIndex = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
 let hideDone = true;
-let activeProject = '';   // '' = all projects
+let activeProject = '';
+let sortByModified = false;   // false = row order, true = recently modified first
+let searchQuery = '';
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 window.onload = () => {
@@ -279,11 +295,14 @@ window.onload = () => {
   const c = localStorage.getItem('gtd_client_id');
   const h = localStorage.getItem('gtd_hide_done');
   const p = localStorage.getItem('gtd_active_project');
+  const s = localStorage.getItem('gtd_sort_modified');
   if (k) document.getElementById('api-key-input').value = k;
   if (c) document.getElementById('client-id-input').value = c;
   if (h !== null) hideDone = h === 'true';
   if (p !== null) activeProject = p;
+  if (s !== null) sortByModified = s === 'true';
   updateHideDoneBtn();
+  updateSortBtn();
   if (k) connect();
 };
 
@@ -304,6 +323,65 @@ async function connect() {
     toast('Connection failed — check API key & sheet sharing');
   }
   setLoading(false);
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function onSearchInput() {
+  searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+  const clearBtn = document.getElementById('search-clear');
+  clearBtn.classList.toggle('show', searchQuery.length > 0);
+  renderTasks();
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  searchQuery = '';
+  document.getElementById('search-clear').classList.remove('show');
+  renderTasks();
+}
+
+function matchesSearch(t, q) {
+  if (!q) return true;
+  return t.task.toLowerCase().includes(q)
+    || t.project.toLowerCase().includes(q)
+    || t.notes.toLowerCase().includes(q);
+}
+
+// Highlight search term in text
+function highlight(text, q) {
+  if (!q) return esc(text);
+  const escaped = esc(text);
+  const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
+}
+
+// ── SORT ──────────────────────────────────────────────────────────────────────
+function toggleSort() {
+  sortByModified = !sortByModified;
+  localStorage.setItem('gtd_sort_modified', sortByModified);
+  updateSortBtn();
+  renderTasks();
+}
+
+function updateSortBtn() {
+  const btn = document.getElementById('btn-sort');
+  if (!btn) return;
+  btn.classList.toggle('active', sortByModified);
+  btn.textContent = sortByModified ? '↕ modified' : '↕ default';
+}
+
+// ── HIDE DONE ─────────────────────────────────────────────────────────────────
+function toggleHideDone() {
+  hideDone = !hideDone;
+  localStorage.setItem('gtd_hide_done', hideDone);
+  updateHideDoneBtn();
+  renderTasks();
+}
+function updateHideDoneBtn() {
+  const btn = document.getElementById('btn-hide-done');
+  if (!btn) return;
+  btn.classList.toggle('active', hideDone);
+  btn.textContent = hideDone ? '✓ hide done' : '✓ show done';
 }
 
 // ── PROJECT FILTER ────────────────────────────────────────────────────────────
@@ -330,23 +408,9 @@ function onProjectFilterChange() {
   renderTasks();
 }
 
-// ── HIDE DONE TOGGLE ──────────────────────────────────────────────────────────
-function toggleHideDone() {
-  hideDone = !hideDone;
-  localStorage.setItem('gtd_hide_done', hideDone);
-  updateHideDoneBtn();
-  renderTasks();
-}
-function updateHideDoneBtn() {
-  const btn = document.getElementById('btn-hide-done');
-  if (!btn) return;
-  btn.classList.toggle('active', hideDone);
-  btn.textContent = hideDone ? '✓ hide done' : '✓ show done';
-}
-
 // ── SHEETS READ ───────────────────────────────────────────────────────────────
 async function loadTasks() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A2:I2000`);
+  const range = encodeURIComponent(`${SHEET_NAME}!A2:J2000`);
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(await r.text());
@@ -362,6 +426,7 @@ async function loadTasks() {
     status:    row[6] || 'active',
     id:        row[7] || uid(),
     completed: row[8] || '',
+    modified:  row[9] || '',
   })).filter(t => t.task && t.status !== 'deleted');
 }
 
@@ -400,12 +465,13 @@ async function sheetsWrite(method, range, values) {
 }
 
 async function ensureHeaders() {
-  const range = encodeURIComponent(`${SHEET_NAME}!A1:I1`);
+  const range = encodeURIComponent(`${SHEET_NAME}!A1:J1`);
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
   if (!r.ok) return;
   const d = await r.json();
   if ((d.values || [[]])[0]?.[0]) return;
-  await sheetsWrite('PUT', `${SHEET_NAME}!A1:I1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed']);
+  await sheetsWrite('PUT', `${SHEET_NAME}!A1:J1`,
+    ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed','Modified']);
 }
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
@@ -425,23 +491,34 @@ function countActive(l) { return tasks.filter(t => t.list===l && t.status!=='don
 function renderTasks() {
   const c = document.getElementById('task-list');
   if (!c) return;
+
   let filtered = tasks.filter(t => t.list === activeList);
   if (activeProject) filtered = filtered.filter(t => t.project === activeProject);
   if (hideDone) filtered = filtered.filter(t => t.status !== 'done');
+  if (searchQuery) filtered = filtered.filter(t => matchesSearch(t, searchQuery));
+
+  if (sortByModified) {
+    filtered = [...filtered].sort((a, b) => {
+      if (!a.modified && !b.modified) return 0;
+      if (!a.modified) return 1;
+      if (!b.modified) return -1;
+      return b.modified.localeCompare(a.modified);
+    });
+  }
 
   if (!filtered.length) {
-    const allInList = tasks.filter(t => t.list === activeList);
     let msg = `Nothing in ${activeList}`;
-    if (activeProject && !allInList.some(t => t.project === activeProject)) {
-      msg = `No tasks for project "${activeProject}" in ${activeList}`;
-    } else if (hideDone && allInList.filter(t => !activeProject || t.project===activeProject).every(t => t.status==='done')) {
-      msg = 'All tasks done — toggle "hide done" to see them';
-    }
+    if (searchQuery) msg = `No results for "${searchQuery}"`;
+    else if (activeProject && !tasks.some(t => t.list===activeList && t.project===activeProject)) msg = `No tasks for "${activeProject}" in ${activeList}`;
+    else if (hideDone && tasks.filter(t => t.list===activeList && (!activeProject || t.project===activeProject)).every(t => t.status==='done')) msg = 'All tasks done — toggle "hide done" to see them';
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">${listIcon(activeList)}</div><p>${msg}</p><p style="opacity:0.5;font-size:0.68rem;margin-top:0.25rem">Tap + to add something</p></div>`;
     return;
   }
+
   const today = new Date(); today.setHours(0,0,0,0);
   const soon  = new Date(today); soon.setDate(today.getDate()+3);
+  const q = searchQuery;
+
   c.innerHTML = filtered.map(t => {
     const done = t.status === 'done';
     let dueTag = '';
@@ -452,15 +529,14 @@ function renderTasks() {
              : d <= soon ? `<span class="tag due-soon">📅 ${lbl}</span>`
              :              `<span class="tag">📅 ${lbl}</span>`;
     }
-    const proj = t.project ? `<span class="tag project">◆ ${esc(t.project)}</span>` : '';
+    const proj = t.project ? `<span class="tag project">◆ ${highlight(t.project, q)}</span>` : '';
     const doc  = t.doc     ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
-    const completedTag = done && t.completed
-      ? `<span class="tag completed-on">done ${formatDate(t.completed)}</span>` : '';
+    const completedTag = done && t.completed ? `<span class="tag completed-on">done ${formatDate(t.completed)}</span>` : '';
     const overdue = !done && t.due && new Date(t.due+'T00:00:00') < today;
     return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditModal(${t.rowIndex})">
       <div class="task-check${done?' checked':''}" onclick="toggleDone(event,${t.rowIndex})">${done?'✓':''}</div>
       <div class="task-body">
-        <span class="task-title">${esc(t.task)}</span>
+        <span class="task-title">${highlight(t.task, q)}</span>
         <span class="task-meta">${proj}${dueTag}${doc}${completedTag}</span>
       </div>
     </div>`;
@@ -482,11 +558,12 @@ async function toggleDone(e, ri) {
   const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
   const ns = t.status==='done' ? 'active' : 'done';
   const completedDate = ns === 'done' ? todayStr() : '';
+  const modifiedDate = nowStr();
   setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:I${ri}`,
-    [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate]);
+  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:J${ri}`,
+    [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate, modifiedDate]);
   if (ok) {
-    t.status = ns; t.completed = completedDate;
+    t.status = ns; t.completed = completedDate; t.modified = modifiedDate;
     buildNav(); renderTasks();
     toast(ns==='done' ? 'Done ✓' : 'Reopened');
   } else {
@@ -497,7 +574,6 @@ async function toggleDone(e, ri) {
 
 // ── AUTOCOMPLETE ──────────────────────────────────────────────────────────────
 let acHighlight = -1;
-let acBlurTimer = null;
 
 function acGetMatches(val) {
   const projects = getProjects();
@@ -509,7 +585,7 @@ function acGetMatches(val) {
 function acRender(matches) {
   const dd = document.getElementById('ac-dropdown');
   if (!matches.length) { dd.classList.remove('open'); return; }
-  dd.innerHTML = matches.map((p, i) =>
+  dd.innerHTML = matches.map(p =>
     `<div class="autocomplete-item" data-val="${esc(p)}" onmousedown="acSelect('${esc(p)}')">${esc(p)}</div>`
   ).join('');
   acHighlight = -1;
@@ -517,44 +593,28 @@ function acRender(matches) {
 }
 
 function acInput() {
-  const val = document.getElementById('f-project').value;
-  acRender(acGetMatches(val));
+  acRender(acGetMatches(document.getElementById('f-project').value));
 }
-
 function acSelect(val) {
   document.getElementById('f-project').value = val;
   document.getElementById('ac-dropdown').classList.remove('open');
   acHighlight = -1;
 }
-
 function acBlur() {
-  // small delay so mousedown on item fires first
-  acBlurTimer = setTimeout(() => {
+  setTimeout(() => {
     document.getElementById('ac-dropdown').classList.remove('open');
     acHighlight = -1;
   }, 150);
 }
-
 function acKeydown(e) {
   const dd = document.getElementById('ac-dropdown');
   const items = dd.querySelectorAll('.autocomplete-item');
   if (!dd.classList.contains('open')) return;
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    acHighlight = Math.min(acHighlight + 1, items.length - 1);
-    acUpdateHighlight(items);
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    acHighlight = Math.max(acHighlight - 1, 0);
-    acUpdateHighlight(items);
-  } else if (e.key === 'Enter' && acHighlight >= 0) {
-    e.preventDefault();
-    acSelect(items[acHighlight].dataset.val);
-  } else if (e.key === 'Escape') {
-    dd.classList.remove('open');
-  }
+  if (e.key === 'ArrowDown') { e.preventDefault(); acHighlight = Math.min(acHighlight+1, items.length-1); acUpdateHighlight(items); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); acHighlight = Math.max(acHighlight-1, 0); acUpdateHighlight(items); }
+  else if (e.key === 'Enter' && acHighlight >= 0) { e.preventDefault(); acSelect(items[acHighlight].dataset.val); }
+  else if (e.key === 'Escape') { dd.classList.remove('open'); }
 }
-
 function acUpdateHighlight(items) {
   items.forEach((el, i) => el.classList.toggle('highlighted', i === acHighlight));
   if (acHighlight >= 0) items[acHighlight].scrollIntoView({ block: 'nearest' });
@@ -594,23 +654,25 @@ function openEditModal(ri) {
 async function saveTask() {
   const task = document.getElementById('f-task').value.trim();
   if (!task) { toast('Task is required'); return; }
-  const list    = document.getElementById('f-list').value;
-  const due     = document.getElementById('f-due').value;
-  const project = document.getElementById('f-project').value.trim();
-  const doc     = document.getElementById('f-doc').value.trim();
-  const notes   = document.getElementById('f-notes').value.trim();
+  const list     = document.getElementById('f-list').value;
+  const due      = document.getElementById('f-due').value;
+  const project  = document.getElementById('f-project').value.trim();
+  const doc      = document.getElementById('f-doc').value.trim();
+  const notes    = document.getElementById('f-notes').value.trim();
+  const modified = nowStr();
   setLoading(true);
   if (editingRowIndex) {
     const t = tasks.find(x=>x.rowIndex===editingRowIndex);
-    const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:I${editingRowIndex}`,
-      [task, list, project, due, doc, notes, t?t.status:'active', t?t.id:uid(), t?t.completed:'']);
+    const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:J${editingRowIndex}`,
+      [task, list, project, due, doc, notes, t?t.status:'active', t?t.id:uid(), t?t.completed:'', modified]);
     if (ok) {
-      if(t){t.task=task;t.list=list;t.due=due;t.project=project;t.doc=doc;t.notes=notes;}
+      if(t){t.task=task;t.list=list;t.due=due;t.project=project;t.doc=doc;t.notes=notes;t.modified=modified;}
       toast('Updated ✓');
     } else toast('Update failed');
   } else {
     await ensureHeaders();
-    const ok = await sheetsWrite('POST', `${SHEET_NAME}!A:I`, [task, list, project, due, doc, notes, 'active', uid(), '']);
+    const ok = await sheetsWrite('POST', `${SHEET_NAME}!A:J`,
+      [task, list, project, due, doc, notes, 'active', uid(), '', modified]);
     if (ok) { await loadTasks(); toast('Task added ✓'); }
     else toast('Add failed — check OAuth');
   }
@@ -623,8 +685,8 @@ async function deleteTask() {
   if (!editingRowIndex || !confirm('Delete this task?')) return;
   const t = tasks.find(x=>x.rowIndex===editingRowIndex); if(!t) return;
   setLoading(true);
-  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:I${editingRowIndex}`,
-    [t.task, t.list, t.project, t.due, t.doc, t.notes, 'deleted', t.id, t.completed]);
+  const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${editingRowIndex}:J${editingRowIndex}`,
+    [t.task, t.list, t.project, t.due, t.doc, t.notes, 'deleted', t.id, t.completed, t.modified]);
   if (ok) {
     tasks = tasks.filter(x=>x.rowIndex!==editingRowIndex);
     toast('Deleted'); closeModal();
@@ -669,7 +731,7 @@ function toggleSettings() {
       </div>
       <div class="settings-section">
         <h3>Sheet Column Guide</h3>
-        <div class="settings-val">A: Task &nbsp;·&nbsp; B: List &nbsp;·&nbsp; C: Project<br>D: Due (YYYY-MM-DD) &nbsp;·&nbsp; E: Doc URL<br>F: Notes &nbsp;·&nbsp; G: Status &nbsp;·&nbsp; H: ID<br>I: Completed (YYYY-MM-DD)<br><br>⚠ Don't rename, reorder, or delete header row.</div>
+        <div class="settings-val">A: Task &nbsp;·&nbsp; B: List &nbsp;·&nbsp; C: Project<br>D: Due (YYYY-MM-DD) &nbsp;·&nbsp; E: Doc URL<br>F: Notes &nbsp;·&nbsp; G: Status &nbsp;·&nbsp; H: ID<br>I: Completed (YYYY-MM-DD) &nbsp;·&nbsp; J: Modified<br><br>⚠ Don't rename, reorder, or delete header row.</div>
       </div>
       <div class="settings-section">
         <h3>Update Credentials</h3>
@@ -704,6 +766,10 @@ function uid() { return Date.now().toString(36)+Math.random().toString(36).slice
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function nowStr() {
+  const d = new Date();
+  return d.toISOString().slice(0, 16).replace('T', ' '); // "YYYY-MM-DD HH:MM"
 }
 let toastTimer;
 function toast(msg) {
