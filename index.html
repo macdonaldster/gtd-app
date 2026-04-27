@@ -60,6 +60,7 @@ input:focus { border-color: var(--accent); }
 #app { display: none; flex-direction: column; min-height: 100vh; }
 .app-header { position: sticky; top: 0; z-index: 100; background: rgba(15,15,26,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0.9rem 1.1rem; display: flex; align-items: center; gap: 0.75rem; }
 .app-title { font-family: var(--serif); font-size: 1.35rem; font-weight: 300; font-style: italic; flex: 1; }
+.app-version { font-size: 0.6rem; letter-spacing: 0.08em; color: var(--text3); align-self: flex-end; padding-bottom: 0.15rem; }
 .icon-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.7rem; color: var(--text2); cursor: pointer; font-size: 0.9rem; transition: all 0.15s; font-family: var(--mono); }
 .icon-btn:hover { color: var(--text); border-color: var(--accent); }
 
@@ -177,6 +178,7 @@ select:focus { border-color: var(--accent); }
 <div id="app">
   <header class="app-header">
     <div class="app-title">get<em>things</em>done</div>
+    <span class="app-version">v3</span>
     <button class="icon-btn" onclick="refreshTasks()" title="Refresh">↻</button>
     <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
   </header>
@@ -238,6 +240,7 @@ select:focus { border-color: var(--accent); }
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
+const VERSION    = 3;
 const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
 const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
@@ -256,7 +259,7 @@ window.onload = () => {
   const c = localStorage.getItem('gtd_client_id');
   if (k) document.getElementById('api-key-input').value = k;
   if (c) document.getElementById('client-id-input').value = c;
-  if (k) connect(); // auto-connect if creds saved
+  if (k) connect();
 };
 
 async function connect() {
@@ -338,7 +341,7 @@ async function ensureHeaders() {
   const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${range}?key=${API_KEY}`);
   if (!r.ok) return;
   const d = await r.json();
-  if ((d.values || [[]])[0]?.[0]) return; // already set
+  if ((d.values || [[]])[0]?.[0]) return;
   await sheetsWrite('PUT', `${SHEET_NAME}!A1:I1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID','Completed']);
 }
 
@@ -405,7 +408,7 @@ async function toggleDone(e, ri) {
   e.stopPropagation();
   const t = tasks.find(x=>x.rowIndex===ri); if(!t) return;
   const ns = t.status==='done' ? 'active' : 'done';
-  const completedDate = ns === 'done' ? today() : '';
+  const completedDate = ns === 'done' ? todayStr() : '';
   setLoading(true);
   const ok = await sheetsWrite('PUT', `${SHEET_NAME}!A${ri}:I${ri}`,
     [t.task, t.list, t.project, t.due, t.doc, t.notes, ns, t.id, completedDate]);
@@ -530,6 +533,10 @@ function toggleSettings() {
         <div class="form-group" style="margin-top:0.75rem"><label class="field-label">OAuth Client ID</label><input type="text" id="s-cid" value="${CLIENT_ID}" /></div>
         <button class="btn-primary" style="margin-top:0.5rem" onclick="saveCreds()">Save</button>
       </div>
+      <div class="settings-section">
+        <h3>About</h3>
+        <div class="settings-val">Version ${VERSION}</div>
+      </div>
     </div>`;
 }
 
@@ -547,7 +554,7 @@ function closeModalOnOverlay(e) { if(e.target===document.getElementById('task-mo
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function today() {
+function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
