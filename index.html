@@ -945,6 +945,7 @@ function onSearchInput(){searchQuery=document.getElementById('search-input').val
 function clearSearch(){document.getElementById('search-input').value='';searchQuery='';document.getElementById('search-count').textContent='';document.getElementById('search-input').focus();renderTasks();}
 function matchesSearch(t,q){return t.task.toLowerCase().includes(q)||t.project.toLowerCase().includes(q)||t.notes.toLowerCase().includes(q);}
 function highlight(text,q){if(!q)return esc(text);const eq=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');return esc(text).replace(new RegExp(eq,'gi'),m=>`<mark>${m}</mark>`);}
+function onSortChange(){localStorage.setItem('gtd_sort_order',document.getElementById('sort-select').value);renderCurrent();}
 function toggleHideDone(){hideDone=!hideDone;localStorage.setItem('gtd_hide_done',hideDone);updateHideDoneBtn();renderTasks();}
 function updateHideDoneBtn(){const btn=document.getElementById('btn-hide-done');if(!btn)return;btn.classList.toggle('active',hideDone);btn.textContent=hideDone?'✓ hide done':'✓ show done';}
 
