@@ -381,7 +381,7 @@ let tasks = [], projects = [];
 let activeList = 'Inbox', editingTaskRow = null, editingProjRow = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
 let hideDone = true, activeProject = '', searchQuery = '', searchOpen = false;
-let viewingProjects = false;
+let viewingProjects = false, viewingAll = false;
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
@@ -570,6 +570,7 @@ async function runBrainDump() {
     buildNav(); buildProjectFilter();
     // Switch to Inbox to show the results
     viewingProjects = false;
+    viewingAll = false;
     activeList = 'Inbox';
     buildNav();
     setTimeout(() => {
@@ -622,28 +623,29 @@ function acDumpUpdateHighlight(items) {
 
 // ── NAV ───────────────────────────────────────────────────────────────────────
 function buildNav() {
+  const allCount = tasks.filter(t=>t.status!=='done').length;
+  const allTab = `<button class="nav-tab${viewingAll?' active':''}" onclick="switchList('__all__')">◈ All<span class="badge">${allCount}</span></button>`;
   document.getElementById('nav-tabs').innerHTML = LISTS.map(l => {
     const isProj = l==='Projects';
-    const isActive = isProj ? viewingProjects : (!viewingProjects && l===activeList);
+    const isActive = !viewingAll && (isProj ? viewingProjects : (!viewingProjects && l===activeList));
     const count = isProj
       ? projects.filter(p=>p.status==='active').length
       : tasks.filter(t=>t.list===l&&t.status!=='done').length;
-    return `<button class="nav-tab${isActive?' active':''}" onclick="switchList('${l}')">
-      <span class="dot" style="background:${LIST_COLORS[l]}"></span>
-      ${l}<span class="badge">${count}</span>
-    </button>`;
-  }).join('');
+    return `<button class="nav-tab${isActive?' active':''}" onclick="switchList('${l}')"><span class="dot" style="background:${LIST_COLORS[l]}"></span>${l}<span class="badge">${count}</span></button>`;
+  }).join('') + allTab;
 }
 
 function switchList(l) {
+  viewingAll = l==='__all__';
   viewingProjects = l==='Projects';
-  activeList = l;
+  if (!viewingAll) activeList = l;
   buildNav(); renderCurrent();
 }
 
 // ── RENDER DISPATCH ───────────────────────────────────────────────────────────
 function renderCurrent() {
-  if (viewingProjects) renderProjects();
+  if (viewingAll) renderAllTasks();
+  else if (viewingProjects) renderProjects();
   else renderTasks();
 }
 
@@ -671,6 +673,68 @@ function onProjectFilterChange() {
   localStorage.setItem('gtd_active_project', activeProject);
   sel.classList.toggle('active', !!activeProject);
   renderTasks();
+}
+
+// ── RENDER ALL TASKS ──────────────────────────────────────────────────────────
+function renderAllTasks() {
+  const main = document.getElementById('main-content');
+  if (!main.querySelector('#task-list')) main.innerHTML=`<div class="task-list-container" id="task-list"></div>`;
+  const c = document.getElementById('task-list'); if (!c) return;
+
+  const q = searchQuery;
+  const sortBy = document.getElementById('sort-select')?.value || 'modified';
+
+  // Get all non-deleted tasks, apply filters
+  let all = tasks.filter(t => t.status !== 'deleted');
+  if (hideDone) all = all.filter(t => t.status !== 'done');
+  if (activeProject === NO_PROJECT) all = all.filter(t => !t.project);
+  else if (activeProject) all = all.filter(t => t.project === activeProject);
+  if (q) all = all.filter(t => matchesSearch(t, q));
+
+  // Sort
+  if (sortBy === 'alpha') {
+    all = [...all].sort((a,b) => a.task.localeCompare(b.task));
+  } else if (sortBy === 'modified') {
+    all = [...all].sort((a,b) => {
+      const am = a.modified ? new Date(a.modified).getTime() : a.rowIndex;
+      const bm = b.modified ? new Date(b.modified).getTime() : b.rowIndex;
+      return bm - am;
+    });
+  }
+
+  if (!all.length) {
+    let msg = q ? `No results for "${q}"` : 'No tasks';
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon">◈</div><p>${msg}</p></div>`;
+    return;
+  }
+
+  // Group by list (unless sorting by modified/alpha where grouping would break flow — use flat list with list badge)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const soon = new Date(today); soon.setDate(today.getDate()+3);
+
+  c.innerHTML = all.map(t => {
+    const done = t.status === 'done';
+    let dueTag = '';
+    if (t.due) {
+      const d = new Date(t.due + 'T00:00:00');
+      const lbl = d.toLocaleDateString('en-CA', {month:'short', day:'numeric'});
+      dueTag = d < today ? `<span class="tag due-overdue">⚠ ${lbl}</span>`
+             : d <= soon ? `<span class="tag due-soon">📅 ${lbl}</span>`
+             :              `<span class="tag">📅 ${lbl}</span>`;
+    }
+    const listColor = LIST_COLORS[t.list] || 'var(--text3)';
+    const listTag = `<span class="tag" style="border-color:${listColor};color:${listColor}">${t.list}</span>`;
+    const proj = t.project ? `<span class="tag project">◆ ${highlight(t.project, q)}</span>` : '';
+    const doc = t.doc ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
+    const overdue = !done && t.due && new Date(t.due+'T00:00:00') < today;
+    return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditTaskModal(${t.rowIndex})">
+      <div class="task-check${done?' checked':''}" onclick="toggleDone(event,${t.rowIndex})">${done?'✓':''}</div>
+      <div class="task-body">
+        <div class="task-title">${highlight(t.task, q)}</div>
+        <div class="task-meta">${listTag}${proj}${dueTag}${doc}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── RENDER PROJECTS ───────────────────────────────────────────────────────────
