@@ -61,11 +61,21 @@ input:focus { border-color: var(--accent); }
 .app-header { position: sticky; top: 0; z-index: 100; background: rgba(15,15,26,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0.9rem 1.1rem; display: flex; align-items: center; gap: 0.75rem; }
 .app-title { font-family: var(--serif); font-size: 1.35rem; font-weight: 300; font-style: italic; flex: 1; }
 .icon-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.7rem; color: var(--text2); cursor: pointer; font-size: 0.9rem; transition: all 0.15s; font-family: var(--mono); }
-.icon-btn:hover { color: var(--text); border-color: var(--accent); }
+.icon-btn:hover, .icon-btn.active { color: var(--text); border-color: var(--accent); }
+.icon-btn.active { color: var(--accent); }
 
 /* SORT SELECT */
 .sort-select { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.45rem 0.6rem; color: var(--text2); font-family: var(--mono); font-size: 0.68rem; cursor: pointer; outline: none; transition: all 0.15s; appearance: none; -webkit-appearance: none; }
 .sort-select:focus, .sort-select:hover { color: var(--text); border-color: var(--accent); }
+
+/* SEARCH BAR */
+#search-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 1rem; display: none; align-items: center; gap: 0.5rem; }
+#search-bar.visible { display: flex; }
+#search-input { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.85rem; color: var(--text); font-family: var(--mono); font-size: 0.83rem; outline: none; transition: border-color 0.2s; }
+#search-input:focus { border-color: var(--accent); }
+#search-clear { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 1rem; padding: 0.25rem 0.4rem; border-radius: var(--radius-sm); transition: color 0.15s; font-family: var(--mono); }
+#search-clear:hover { color: var(--text); }
+.search-count { font-size: 0.65rem; color: var(--text2); white-space: nowrap; }
 
 /* NAV */
 .nav-tabs { display: flex; overflow-x: auto; background: var(--surface); border-bottom: 1px solid var(--border); scrollbar-width: none; }
@@ -99,6 +109,8 @@ input:focus { border-color: var(--accent); }
 .tag.due-overdue { color: var(--waiting); border-color: rgba(248,113,113,0.3); background: rgba(248,113,113,0.06); }
 .tag.doc { color: var(--someday); border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.06); cursor: pointer; }
 .tag.doc:hover { background: rgba(96,165,250,0.15); }
+.tag.list-name { color: var(--text2); border-color: var(--border); }
+mark { background: rgba(124,106,247,0.25); color: var(--text); border-radius: 2px; padding: 0 1px; }
 
 .fab { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 54px; height: 54px; background: var(--accent); border: none; border-radius: 50%; color: white; font-size: 1.4rem; cursor: pointer; z-index: 200; box-shadow: 0 4px 24px var(--accent-glow); transition: transform 0.2s; display: flex; align-items: center; justify-content: center; }
 .fab:active { transform: scale(0.91); }
@@ -151,19 +163,15 @@ select:focus { border-color: var(--accent); }
 
   <div class="setup-card">
     <h2>Connect your Google account to get started</h2>
-
     <div class="form-group">
       <label class="field-label">Google API Key</label>
       <input type="password" id="api-key-input" placeholder="AIza..." autocomplete="off" />
     </div>
-
     <div class="form-group">
       <label class="field-label">OAuth Client ID <span style="color:var(--text3)">(needed to add/edit tasks)</span></label>
       <input type="text" id="client-id-input" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off" />
     </div>
-
     <button class="btn-primary" onclick="connect()">Connect &amp; Load Tasks</button>
-
     <div class="setup-note">
       <strong>One-time setup:</strong><br>
       1. <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a> → Create project<br>
@@ -185,9 +193,17 @@ select:focus { border-color: var(--accent); }
       <option value="alpha">↕ A–Z</option>
       <option value="created">↕ Created</option>
     </select>
+    <button class="icon-btn" id="search-btn" onclick="toggleSearch()" title="Search">⌕</button>
     <button class="icon-btn" onclick="refreshTasks()" title="Refresh">↻</button>
     <button class="icon-btn" onclick="toggleSettings()" title="Settings">⚙</button>
   </header>
+
+  <div id="search-bar">
+    <input type="text" id="search-input" placeholder="Search tasks, projects, notes…" oninput="renderTasks()" />
+    <span class="search-count" id="search-count"></span>
+    <button id="search-clear" onclick="clearSearch()" title="Clear search">✕</button>
+  </div>
+
   <nav class="nav-tabs" id="nav-tabs"></nav>
   <main id="main-content">
     <div class="task-list-container" id="task-list"></div>
@@ -245,20 +261,21 @@ select:focus { border-color: var(--accent); }
 </div>
 
 <script>
-// ── CONFIG ──────────────────────────────────────────────────────────────────
+// ── CONFIG ────────────────────────────────────────────────────────────────────
 const SHEET_ID   = '1RhIJLd9Z8AJhMINUm8BntdlHIvbsRsP94RPv5I3rzFk';
 const SHEET_NAME = 'Tasks';
 const DOCS_FOLDER_URL = 'https://drive.google.com/drive/folders/1RWonQYtIiVjY6eZB2va0m4-rvfCUUt57';
 const LISTS = ['Inbox','Next Actions','Projects','Waiting For','Someday/Maybe','Reference'];
 const LIST_COLORS = { 'Inbox':'#6af7c2','Next Actions':'#a78bfa','Projects':'#f7c26a','Waiting For':'#f87171','Someday/Maybe':'#60a5fa','Reference':'#c084fc' };
-// Sheet columns (0-indexed): A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Modified
+// Sheet columns: A=Task B=List C=Project D=Due E=DocURL F=Notes G=Status H=ID I=Modified
 
-// ── STATE ────────────────────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────────────────────
 let API_KEY = '', CLIENT_ID = '';
 let tasks = [], activeList = 'Inbox', editingRowIndex = null;
 let tokenClient = null, accessToken = null, isAuthed = false;
+let searchOpen = false;
 
-// ── INIT ─────────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 window.onload = () => {
   const k = localStorage.getItem('gtd_api_key');
   const c = localStorage.getItem('gtd_client_id');
@@ -350,6 +367,48 @@ async function ensureHeaders() {
   await sheetsWrite('PUT', `${SHEET_NAME}!A1:I1`, ['Task','List','Project','Due','DocURL','Notes','Status','ID','Modified']);
 }
 
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+function toggleSearch() {
+  searchOpen = !searchOpen;
+  const bar = document.getElementById('search-bar');
+  const btn = document.getElementById('search-btn');
+  bar.classList.toggle('visible', searchOpen);
+  btn.classList.toggle('active', searchOpen);
+  if (searchOpen) {
+    setTimeout(() => document.getElementById('search-input').focus(), 50);
+  } else {
+    document.getElementById('search-input').value = '';
+    document.getElementById('search-count').textContent = '';
+    renderTasks();
+  }
+}
+
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-count').textContent = '';
+  document.getElementById('search-input').focus();
+  renderTasks();
+}
+
+function getSearchQuery() {
+  return (document.getElementById('search-input')?.value || '').trim().toLowerCase();
+}
+
+function matchesSearch(t, q) {
+  if (!q) return true;
+  return t.task.toLowerCase().includes(q)
+    || t.project.toLowerCase().includes(q)
+    || t.notes.toLowerCase().includes(q);
+}
+
+// Wrap matching text in <mark> tags for highlighting
+function highlight(text, q) {
+  if (!q) return esc(text);
+  const escaped = esc(text);
+  const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return escaped.replace(new RegExp(escapedQ, 'gi'), m => `<mark>${m}</mark>`);
+}
+
 // ── NAV ───────────────────────────────────────────────────────────────────────
 function buildNav() {
   document.getElementById('nav-tabs').innerHTML = LISTS.map(l => `
@@ -372,8 +431,6 @@ function getSortedTasks(filtered) {
   } else if (sortBy === 'created') {
     copy.sort((a, b) => a.rowIndex - b.rowIndex);
   } else {
-    // modified: tasks with a modified timestamp sorted newest-first,
-    // tasks without a modified stamp fall back to rowIndex (treated as oldest)
     copy.sort((a, b) => {
       const am = a.modified ? new Date(a.modified).getTime() : a.rowIndex;
       const bm = b.modified ? new Date(b.modified).getTime() : b.rowIndex;
@@ -387,14 +444,31 @@ function getSortedTasks(filtered) {
 function renderTasks() {
   const c = document.getElementById('task-list');
   if (!c) return;
-  const filtered = tasks.filter(t => t.list === activeList);
+  const q = getSearchQuery();
+  const filtered = tasks.filter(t => t.list === activeList && matchesSearch(t, q));
+
+  // Update search count
+  if (searchOpen) {
+    const countEl = document.getElementById('search-count');
+    if (q) {
+      const total = tasks.filter(t => matchesSearch(t, q)).length;
+      countEl.textContent = total === 1 ? '1 result' : `${total} results`;
+    } else {
+      countEl.textContent = '';
+    }
+  }
+
   if (!filtered.length) {
-    c.innerHTML = `<div class="empty-state"><div class="empty-icon">${listIcon(activeList)}</div><p>Nothing in ${activeList}</p><p style="opacity:0.5;font-size:0.7rem">Tap + to add something</p></div>`;
+    const msg = q ? `No results for "${q}"` : `Nothing in ${activeList}`;
+    const sub = q ? 'Try a different search term' : 'Tap + to add something';
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon">${q ? '🔍' : listIcon(activeList)}</div><p>${msg}</p><p style="opacity:0.5;font-size:0.7rem">${sub}</p></div>`;
     return;
   }
+
   const sorted = getSortedTasks(filtered);
   const today = new Date(); today.setHours(0,0,0,0);
   const soon  = new Date(today); soon.setDate(today.getDate()+3);
+
   c.innerHTML = sorted.map(t => {
     const done = t.status === 'done';
     let dueTag = '';
@@ -405,13 +479,13 @@ function renderTasks() {
              : d <= soon ? `<span class="tag due-soon">📅 ${lbl}</span>`
              :              `<span class="tag">📅 ${lbl}</span>`;
     }
-    const proj = t.project ? `<span class="tag project">◆ ${esc(t.project)}</span>` : '';
+    const proj = t.project ? `<span class="tag project">◆ ${highlight(t.project, q)}</span>` : '';
     const doc  = t.doc     ? `<span class="tag doc" onclick="openDoc(event,'${esc(t.doc)}')">↗ doc</span>` : '';
     const overdue = !done && t.due && new Date(t.due+'T00:00:00') < today;
     return `<div class="task-card${done?' completed':''}${overdue?' overdue':''}" onclick="openEditModal(${t.rowIndex})">
       <div class="task-check${done?' checked':''}" onclick="toggleDone(event,${t.rowIndex})">${done?'✓':''}</div>
       <div class="task-body">
-        <div class="task-title">${esc(t.task)}</div>
+        <div class="task-title">${highlight(t.task, q)}</div>
         <div class="task-meta">${proj}${dueTag}${doc}</div>
       </div>
     </div>`;
