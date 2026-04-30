@@ -1,0 +1,8 @@
+{
+  "appId": "com.example.gtdapp",
+  "appName": "GTD",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}

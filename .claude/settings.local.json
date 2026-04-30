@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd C:\\\\SM\\\\Github\\\\gtd-app; Get-ChildItem -Name | Where-Object { $_ -ne 'node_modules' -and $_ -ne 'android' })"
+    ]
+  }
+}
